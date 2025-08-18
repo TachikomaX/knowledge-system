@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "knowledge-system-backend"
+version = "0.1.0"
+description = "知识管理系统后端"
+authors = ["alvin <alvingcy1121@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = "^0.116.1"
+SQLAlchemy = "^2.0.43"
+pydantic = "^2.11.7"
+python-dotenv = "^1.1.1"
+psycopg2-binary = "^2.9.10"
+alembic = "^1.16.4"
+
+[tool.poetry.dev-dependencies]
+alembic = "^1.16.4"
+black = "^25.1.0"
+isort = "^6.0.1"
+flake8 = "^7.3.0"
+pytest = "^8.4.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
