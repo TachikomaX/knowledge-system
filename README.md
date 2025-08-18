@@ -128,6 +128,12 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
+进入本地docker启动的db
+
+```bash
+docker exec -it kms_postgres psql -U kms_user -d kms_db
+```
+
 ### 前端
 
 进入 `frontend/`：
