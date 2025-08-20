@@ -68,7 +68,7 @@
 
 ## **4. 系统架构设计（概要）**
 
-* **前端**（可选）：React + Tailwind CSS（如果不做前端，可用 Swagger UI 测试 API）
+* **前端**（可选）：React + Tailwind CSS
 * **后端**：FastAPI（Python）
 * **数据库**：PostgreSQL（结构化数据）、ChromaDB（向量搜索）
 * **AI服务**：DeepSeek API
