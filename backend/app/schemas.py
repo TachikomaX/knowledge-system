@@ -5,7 +5,14 @@
 # @Description :
 
 # here put the import lib
+from typing import Any, Optional
 from pydantic import BaseModel, EmailStr
+
+
+class ResponseModel(BaseModel):
+    code: int
+    msg: str
+    data: Optional[Any] = None
 
 
 class UserBase(BaseModel):
@@ -27,3 +34,23 @@ class UserOut(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+
+class NoteBase(BaseModel):
+    title: str
+    content: str
+    summary: str
+    user_id: int
+
+
+class NoteCreate(NoteBase):
+    pass
+
+
+class NoteOut(NoteBase):
+    id: int
+    created_at: int
+    updated_at: int
+
+    class Config:
+        orm_mode = True
