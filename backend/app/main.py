@@ -1,12 +1,16 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
-from app.utils.response import error_response
 
+from app.routers.note import router as notes_router
+from app.routers.token import router as token_router
 from app.routers.user import router as users_router
+from app.utils.response import error_response
 
 app = FastAPI()
 app.include_router(users_router)
+app.include_router(notes_router)
+app.include_router(token_router)
 
 
 @app.exception_handler(SQLAlchemyError)

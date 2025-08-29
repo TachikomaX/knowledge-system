@@ -8,15 +8,15 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
-from jose import JWTError, jwt
-from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.models import User as user_model
 from app.db import get_db
+from app.models import User as user_model
 
 # ------------------------
 # 密码哈希工具
@@ -54,8 +54,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 # ------------------------
 # OAuth2 认证
 # ------------------------
-# 登录时用 /users/login 作为 token 获取接口
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
+# 登录时用 /token 作为 token 获取接口
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 
 def get_current_user(token: str = Depends(oauth2_scheme),
@@ -75,8 +75,7 @@ def get_current_user(token: str = Depends(oauth2_scheme),
         raise credentials_exception
 
     # 根据 email 查询数据库
-    user = db.query(
-        user_model).filter(user_model.email == email).first()
+    user = db.query(user_model).filter(user_model.email == email).first()
     if user is None:
         raise credentials_exception
     return user

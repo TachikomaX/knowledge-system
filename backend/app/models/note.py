@@ -5,10 +5,12 @@
 # @Description :
 
 # here put the import lib
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from app.db import Base
+from app.models.note_tags import note_tags
 
 
 class Note(Base):
@@ -25,4 +27,4 @@ class Note(Base):
                         onupdate=func.now())
 
     user = relationship("User", backref="notes")
-    tags = relationship("Tag", secondary="note_tags", back_populates="notes")
+    tags = relationship("Tag", secondary=note_tags, back_populates="notes")

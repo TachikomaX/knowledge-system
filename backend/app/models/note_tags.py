@@ -5,7 +5,8 @@
 # @Description :
 
 # here put the import lib
-from sqlalchemy import Table, Column, Integer, ForeignKey
+from sqlalchemy import Column, ForeignKey, Integer, Table
+
 from app.db import Base
 
 note_tags = Table(

@@ -6,6 +6,7 @@
 
 # here put the import lib
 from typing import Any, Optional
+
 from pydantic import BaseModel, EmailStr
 
 
@@ -13,6 +14,12 @@ class ResponseModel(BaseModel):
     code: int
     msg: str
     data: Optional[Any] = None
+
+
+# 标准 OAuth2 响应模型
+class OAuth2Response(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
 
 
 class UserBase(BaseModel):
@@ -40,7 +47,6 @@ class NoteBase(BaseModel):
     title: str
     content: str
     summary: str
-    user_id: int
 
 
 class NoteCreate(NoteBase):
@@ -48,9 +54,15 @@ class NoteCreate(NoteBase):
 
 
 class NoteOut(NoteBase):
+    user_id: int
     id: int
     created_at: int
     updated_at: int
 
     class Config:
         orm_mode = True
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str

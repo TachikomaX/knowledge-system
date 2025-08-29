@@ -1,7 +1,6 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
@@ -19,10 +18,10 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from app.db import Base
-from app.models.user import User
 from app.models.note import Note
-from app.models.tag import Tag
 from app.models.note_tags import note_tags
+from app.models.tag import Tag
+from app.models.user import User
 
 target_metadata = target_metadata = Base.metadata
 

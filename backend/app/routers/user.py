@@ -4,65 +4,62 @@
 # @File        : user.py
 # @Description :
 
-# here put the import lib
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends
-from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app import crud
+from app.auth import create_access_token, get_current_user, verify_password
 from app.db import get_db
 from app.models import user as user_model
-from app.auth import hash_password, verify_password, create_access_token, get_current_user
-from datetime import timedelta
-from app.utils.response import success_response, error_response
+from app.schemas import UserCreate, UserLogin
+from app.utils.response import error_response, success_response
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
 # 注册
 @router.post("/register", response_model=dict)
-def register(username: str,
-             email: str,
-             password: str,
-             db: Session = Depends(get_db)):
-    existing_user = db.query(
-        user_model.User).filter(user_model.User.email == email).first()
-    if existing_user:
-        return error_response(code=1001, msg="Email already registered")
+def register(user: UserCreate, db: Session = Depends(get_db)):
+    try:
+        db_user = crud.create_user(db, user)
+        return success_response(data={
+            "id": db_user.id,
+            "username": db_user.username,
+            "email": db_user.email
+        },
+                                msg="User registered successfully")
 
-    hashed_pw = hash_password(password)
-    new_user = user_model.User(username=username,
-                               email=email,
-                               hashed_password=hashed_pw)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    except IntegrityError:
+        db.rollback()
+        return error_response(code=1001,
+                              msg="Email or username already registered")
 
-    return success_response(data={
-        "id": new_user.id,
-        "username": new_user.username,
-        "email": new_user.email
-    },
-                            msg="User registered successfully")
+    except SQLAlchemyError:
+        db.rollback()
+        return error_response(code=1002,
+                              msg="Database error, please try again later")
 
 
-# 登录（OAuth2 标准写法）
+# 登录 应用层封装写法（OAuth2 标准写法）
 # fastapi.Depends用于声明和注入依赖项到路由处理函数中，
 # 以便处理函数可以使用这些依赖项来获取数据、执行验证、进行身份认证等操作
+# OAuth2 规范明确要求 token 请求必须使用 application/x-www-form-urlencoded，而不是 application/json。
 @router.post("/login", response_model=dict)
-def login(form_data: OAuth2PasswordRequestForm = Depends(),
-          db: Session = Depends(get_db)):
-    user = db.query(user_model.User).filter(
-        user_model.User.email == form_data.username).first()
-    if not user or not verify_password(form_data.password,
-                                       user.hashed_password):
-        return error_response(code=1002, msg="Incorrect email or password")
+def login(user: UserLogin, db: Session = Depends(get_db)):
+    db_user = crud.get_user_by_email(db, email=user.email)
+    if not db_user or not verify_password(user.password,
+                                          db_user.hashed_password):
+        return error_response(code=1003, msg="Incorrect email or password")
 
     access_token_expires = timedelta(minutes=30)  # todo 待配置化
-    token = create_access_token(data={"sub": str(user.id)},
-                                expires_delta=access_token_expires)
+    access_token = create_access_token(data={"sub": str(db_user.id)},
+                                       expires_delta=access_token_expires)
 
     return success_response(data={
-        "access_token": token,
+        "access_token": access_token,
         "token_type": "bearer"
     },
                             msg="Login successful")

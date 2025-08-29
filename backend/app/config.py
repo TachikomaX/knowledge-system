@@ -4,9 +4,10 @@
 # @File        : config.py
 # @Description :
 
+from functools import lru_cache
+
 # here put the import lib
 from pydantic_settings import BaseSettings
-from functools import lru_cache
 
 
 class Settings(BaseSettings):
