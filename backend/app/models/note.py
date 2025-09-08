@@ -6,6 +6,7 @@
 
 # here put the import lib
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -25,6 +26,9 @@ class Note(Base):
     updated_at = Column(DateTime(timezone=True),
                         server_default=func.now(),
                         onupdate=func.now())
+
+    # 全文搜索字段
+    search_vector = Column(TSVECTOR)
 
     user = relationship("User", backref="notes")
     tags = relationship("Tag", secondary=note_tags, back_populates="notes")

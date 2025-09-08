@@ -4,8 +4,9 @@
 # @File        : crud.py
 # @Description :
 
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy import func
 # here put the import lib
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app import auth, models, schemas
@@ -18,22 +19,88 @@ def get_user_by_email(db: Session, email: str):
 def create_user(db: Session, user: schemas.UserCreate):
     hashed_pw = auth.hash_password(user.password)
     db_user = models.User(username=user.username,
-                            email=user.email,
-                            hashed_password=hashed_pw)
+                          email=user.email,
+                          hashed_password=hashed_pw)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
 
 
-
 def create_note(db: Session, user_id: int, note: schemas.NoteCreate):
     db_note = models.Note(user_id=user_id,
-                            title=note.title,
-                            content=note.content,
-                            summary=note.summary)
+                          title=note.title,
+                          content=note.content,
+                          summary=note.summary)
     db.add(db_note)
     db.commit()
     db.refresh(db_note)
     return db_note
 
+
+def update_note(db: Session, note_id: int, user_id: int,
+                note_update: schemas.NoteUpdate):
+    note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    if not note:
+        return None, "Note not found"
+    if note.user_id != user_id:
+        return None, "Not authorized to edit this note"
+
+    if note_update.title is not None:
+        note.title = note_update.title
+    if note_update.content is not None:
+        note.content = note_update.content
+    if note_update.summary is not None:
+        note.summary = note_update.summary
+
+    try:
+        db.commit()
+        db.refresh(note)
+        return note, None
+    except SQLAlchemyError as e:
+        db.rollback()
+        return None, str(e)
+
+
+def delete_note(db: Session, note_id: int, user_id: int):
+    note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    if not note:
+        return False, "Note not found"
+    if note.user_id != user_id:
+        return False, "Not authorized to delete this note"
+
+    try:
+        db.delete(note)
+        db.commit()
+        return True, None
+    except SQLAlchemyError as e:
+        db.rollback()
+        return False, str(e)
+
+
+# 获取单个笔记
+def get_note(db: Session, note_id: int, user_id: int):
+    note = db.query(models.Note).filter(
+        models.Note.id == note_id, models.Note.user_id == user_id).first()
+    return note
+
+
+# 获取当前用户的所有笔记
+def list_notes(db: Session, user_id: int, skip: int = 0, limit: int = 20):
+    return db.query(models.Note).filter(
+        models.Note.user_id == user_id).offset(skip).limit(limit).all()
+
+
+# 简单全文搜索（title or content or summary）
+def search_notes(db: Session,
+                 user_id: int,
+                 query: str,
+                 skip: int = 0,
+                 limit: int = 20):
+    return db.query(models.Note).filter(
+        models.Note.user_id == user_id,
+        func.to_tsvector(
+            'english', models.Note.title + ' ' + models.Note.content + ' ' +
+            func.coalesce(models.Note.summary, '')).op('@@')(
+                func.plainto_tsquery('english',
+                                     query))).offset(skip).limit(limit).all()
