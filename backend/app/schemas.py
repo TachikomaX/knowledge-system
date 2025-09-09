@@ -5,15 +5,22 @@
 # @Description :
 
 # here put the import lib
-from typing import Any, Optional
+from datetime import datetime
+from typing import Generic, List, Optional, TypeVar
 
 from pydantic import BaseModel, EmailStr
+from pydantic.generics import GenericModel
+
+T = TypeVar("T")
 
 
-class ResponseModel(BaseModel):
+class ResponseBase(GenericModel, Generic[T]):
     code: int
     msg: str
-    data: Optional[Any] = None
+    data: Optional[T] = None
+
+    class Config:
+        orm_mode = True
 
 
 # 标准 OAuth2 响应模型
@@ -38,6 +45,21 @@ class UserOut(UserBase):
         orm_mode = True
 
 
+class TagBase(BaseModel):
+    name: str
+
+
+class TagCreate(TagBase):
+    pass
+
+
+class Tagout(TagBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -50,23 +72,26 @@ class NoteBase(BaseModel):
 
 
 class NoteCreate(NoteBase):
-    pass
+    tags: Optional[List[int]] = []  # 前端传 tag 的 id 列表
 
 
 class NoteUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     summary: Optional[str] = None
+    tags: Optional[List[int]] = []
 
 
 class NoteOut(NoteBase):
     user_id: int
     id: int
-    created_at: int
-    updated_at: int
+    created_at: datetime
+    updated_at: datetime
+    tags: List[Tagout] = []
 
     class Config:
         orm_mode = True
+        from_attributes = True
 
 
 class UserLogin(BaseModel):

@@ -14,23 +14,18 @@ from app import crud
 from app.auth import create_access_token, get_current_user, verify_password
 from app.db import get_db
 from app.models import user as user_model
-from app.schemas import UserCreate, UserLogin
+from app.schemas import OAuth2Response, ResponseBase, UserCreate, UserLogin, UserOut
 from app.utils.response import error_response, success_response
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
 # 注册
-@router.post("/register", response_model=dict)
-def register(user: UserCreate, db: Session = Depends(get_db)):
+@router.post("/register", response_model=ResponseBase[UserOut])
+def register(user_data: UserCreate, db: Session = Depends(get_db)):
     try:
-        db_user = crud.create_user(db, user)
-        return success_response(data={
-            "id": db_user.id,
-            "username": db_user.username,
-            "email": db_user.email
-        },
-                                msg="User registered successfully")
+        user = crud.create_user(db, user_data)
+        return success_response(data=user, msg="User registered successfully")
 
     except IntegrityError:
         db.rollback()
@@ -47,7 +42,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 # fastapi.Depends用于声明和注入依赖项到路由处理函数中，
 # 以便处理函数可以使用这些依赖项来获取数据、执行验证、进行身份认证等操作
 # OAuth2 规范明确要求 token 请求必须使用 application/x-www-form-urlencoded，而不是 application/json。
-@router.post("/login", response_model=dict)
+@router.post("/login", response_model=OAuth2Response)
 def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email=user.email)
     if not db_user or not verify_password(user.password,
@@ -66,12 +61,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 
 
 # 获取当前登录用户
-@router.get("/me", response_model=dict)
+@router.get("/me", response_model=ResponseBase[UserOut])
 def get_me(current_user: user_model.User = Depends(get_current_user)):
-    return success_response(data={
-        "id": current_user.id,
-        "username": current_user.username,
-        "email": current_user.email,
-        "created_at": current_user.created_at,
-    },
+    return success_response(data=current_user,
                             msg="User info retrieved successfully")
