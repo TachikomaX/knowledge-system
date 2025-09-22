@@ -5,7 +5,7 @@
 # @Description :
 
 # here put the import lib
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.db import Base
@@ -18,4 +18,11 @@ class Tag(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), unique=True, nullable=False)
 
-    notes = relationship("Note", secondary=note_tags, back_populates="tags")
+    notes = relationship("Note", secondary=note_tags,
+                         back_populates="tags")  # 默认惰性加载
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    user = relationship("User", back_populates="tags")
+
+    __table_args__ = (UniqueConstraint("user_id", "name",
+                                       name="uq_user_tag"), )

@@ -53,7 +53,11 @@ class TagCreate(TagBase):
     pass
 
 
-class Tagout(TagBase):
+class TagUpdate(BaseModel):
+    name: str
+
+
+class TagOut(TagBase):
     id: int
 
     class Config:
@@ -87,7 +91,7 @@ class NoteOut(NoteBase):
     id: int
     created_at: datetime
     updated_at: datetime
-    tags: List[Tagout] = []
+    tags: List[TagOut] = []
 
     class Config:
         orm_mode = True
