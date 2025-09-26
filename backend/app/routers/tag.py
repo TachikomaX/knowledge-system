@@ -13,7 +13,7 @@ from app.db import get_db
 from app.auth import get_current_user
 from app.schemas import TagOut, ResponseBase, TagCreate, TagUpdate
 
-router = APIRouter(prefix="/tags", tags=["tags"])
+router = APIRouter(prefix="/api/tags", tags=["tags"])
 
 
 @router.post("", response_model=ResponseBase[TagOut])

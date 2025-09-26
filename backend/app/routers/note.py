@@ -18,7 +18,7 @@ from app.models import user as user_model
 from app.schemas import NoteCreate, NoteOut, NoteUpdate, ResponseBase
 from app.utils.response import error_response, success_response
 
-router = APIRouter(prefix="/notes", tags=["notes"])
+router = APIRouter(prefix="/api/notes", tags=["notes"])
 
 
 @router.post("", response_model=ResponseBase[NoteOut])

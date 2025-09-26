@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.routers.note import router as notes_router
@@ -14,6 +16,21 @@ app.include_router(users_router)
 app.include_router(notes_router)
 app.include_router(token_router)
 app.include_router(tags_router)
+
+origins = [
+    "http://localhost.tiangolo.com",
+    "https://localhost.tiangolo.com",
+    "http://localhost",
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(SQLAlchemyError)

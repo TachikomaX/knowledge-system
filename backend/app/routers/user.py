@@ -17,7 +17,7 @@ from app.models import user as user_model
 from app.schemas import OAuth2Response, ResponseBase, UserCreate, UserLogin, UserOut
 from app.utils.response import error_response, success_response
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(prefix="/api/users", tags=["users"])
 
 
 # 注册
@@ -42,7 +42,7 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
 # fastapi.Depends用于声明和注入依赖项到路由处理函数中，
 # 以便处理函数可以使用这些依赖项来获取数据、执行验证、进行身份认证等操作
 # OAuth2 规范明确要求 token 请求必须使用 application/x-www-form-urlencoded，而不是 application/json。
-@router.post("/login", response_model=OAuth2Response)
+@router.post("/login", response_model=ResponseBase[OAuth2Response])
 def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email=user.email)
     if not db_user or not verify_password(user.password,

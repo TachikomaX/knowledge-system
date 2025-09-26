@@ -17,7 +17,7 @@ from app.auth import create_access_token, verify_password
 from app.db import get_db
 from app.schemas import OAuth2Response
 
-router = APIRouter(prefix="/token", tags=["token"])
+router = APIRouter(prefix="/api/token", tags=["token"])
 
 
 @router.post("", response_model=OAuth2Response)

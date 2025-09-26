@@ -1,4 +1,6 @@
 import { useState } from "react";
+import {login} from "../api/auth";
+import { getErrorMessage } from "../api/http";
 
 interface LoginProps {
   onLogin: () => void;
@@ -10,28 +12,26 @@ export default function Login({ onLogin }: LoginProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (res.ok) {
+      const res = await login(email, password); // 使用封装好的 login
+      const data = res.data;
+
+      if (res.status === 200) {
         localStorage.setItem("token", data.data?.access_token);
         onLogin();
       } else {
         setError(data.msg || "登录失败");
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      setError("网络错误，请稍后再试");
+      setError(getErrorMessage(err));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
