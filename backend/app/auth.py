@@ -55,7 +55,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 # OAuth2 认证
 # ------------------------
 # 登录时用 /token 作为 token 获取接口
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/token")
 
 
 def get_current_user(token: str = Depends(oauth2_scheme),

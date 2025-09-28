@@ -155,7 +155,7 @@ frontend/
 
 ---
 
-#### ⚙️ 环境准备
+#### ⚙️  前端环境准备
 
 ##### 1. 安装依赖
 
@@ -212,7 +212,7 @@ Authorization: Bearer <token>
 
 ---
 
-#### 🧪 调试流程
+#### 🧪 前端调试流程
 
 1. **启动后端**
    确保 FastAPI 后端（含 `/api/*` 接口）已运行并监听 8000 端口。
@@ -237,17 +237,24 @@ Authorization: Bearer <token>
 
 #### 📌 API 概要
 
-| 模块     | 方法   | 路径                 | 描述                            |
-| -------- | ------ | -------------------- | ------------------------------- |
-| 用户管理 | POST   | /api/register        | 注册                            |
-| 用户管理 | POST   | /api/login           | 登录获取JWT                     |
-| 笔记管理 | POST   | /api/notes           | 创建笔记（调用AI生成摘要&标签） |
-| 笔记管理 | GET    | /api/notes           | 获取笔记列表（分页、标签筛选）  |
-| 笔记管理 | GET    | /api/notes/{id}      | 查看单条笔记                    |
-| 笔记管理 | PUT    | /api/notes/{id}      | 编辑笔记                        |
-| 笔记管理 | DELETE | /api/notes/{id}      | 删除笔记                        |
-| 搜索     | GET    | /api/search          | 全文搜索                        |
-| 语义搜索 | POST   | /api/semantic-search | 向量搜索并生成答案              |
+| 模块     | 方法   | 路径                               | 描述                            |
+| -------- | ------ | ---------------------------------- | ------------------------------- |
+| 用户管理 | POST   | /api/users/register                | 注册                            |
+| 用户管理 | POST   | /api/users/login                   | 登录获取JWT                     |
+| 笔记管理 | POST   | /api/notes                         | 创建笔记（调用AI生成摘要&标签） |
+| 笔记管理 | GET    | /api/notes                         | 获取笔记列表（分页、标签筛选）  |
+| 笔记管理 | GET    | /api/notes/{note_id}               | 查看单条笔记                    |
+| 笔记管理 | PUT    | /api/notes/{note_id}               | 编辑笔记                        |
+| 笔记管理 | DELETE | /api/notes/{note_id}               | 删除笔记                        |
+| 搜索     | GET    | /api/notes/search                  | 全文搜索                        |
+| 语义搜索 | POST   | /api/semantic-search               | 向量搜索并生成答案              |
+| 语义搜索 | POST   | /api/token                         | 标准OAUTH2登录接口              |
+| 标签管理 | POST   | /api/tags                          | 创建标签                        |
+| 标签管理 | GET    | /api/tags                          | 获取当前用户所有标签            |
+| 标签管理 | PUT    | /api/tags/{tag_id}                 | 编辑笔记                        |
+| 标签管理 | DELETE | /api/tags/{tag_id}                 | 删除笔记                        |
+| 标签管理 | POST   | /api/tags/{tag_id}/notes/{note_id} | 新建笔记与标签关联              |
+| 标签管理 | DELETE | /api/tags/{tag_id}/notes/{note_id} | 删除笔记与标签关联              |
 
 ---
 

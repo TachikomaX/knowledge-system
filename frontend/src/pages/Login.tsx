@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {login} from "../api/auth";
 import { getErrorMessage } from "../api/http";
+import { useNavigate } from "react-router-dom";
 
 interface LoginProps {
   onLogin: () => void;
@@ -11,6 +12,7 @@ export default function Login({ onLogin }: LoginProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +25,7 @@ export default function Login({ onLogin }: LoginProps) {
       if (res.status === 200) {
         localStorage.setItem("token", data.data?.access_token);
         onLogin();
+        navigate("/notes"); // 👈 登录成功后跳转
       } else {
         setError(data.msg || "登录失败");
       }
@@ -79,7 +82,7 @@ export default function Login({ onLogin }: LoginProps) {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition bg-white text-gray-900 placeholder-gray-400"
                 required
               />
             </div>
@@ -93,14 +96,14 @@ export default function Login({ onLogin }: LoginProps) {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition bg-white text-gray-900 placeholder-gray-400"
                 required
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-2 rounded-lg text-black bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition mt-8 ${
+              className={`w-full py-2 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition mt-8 ${
                 loading ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
