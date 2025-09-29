@@ -1,5 +1,5 @@
 import { useState } from "react";
-import {login} from "../api/auth";
+import { login } from "../api/auth";
 import { getErrorMessage } from "../api/http";
 import { useNavigate } from "react-router-dom";
 
@@ -14,7 +14,7 @@ export default function Login({ onLogin }: LoginProps) {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-    const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -103,9 +103,8 @@ export default function Login({ onLogin }: LoginProps) {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-2 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition mt-8 ${
-                loading ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className={`w-full py-2 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition mt-8 ${loading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
             >
               {loading ? "登录中…" : "登录"}
             </button>

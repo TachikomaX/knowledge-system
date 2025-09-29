@@ -24,17 +24,29 @@ router = APIRouter(prefix="/api/users", tags=["users"])
 @router.post("/register", response_model=ResponseBase[UserOut])
 def register(user_data: UserCreate, db: Session = Depends(get_db)):
     try:
+        # 先检查用户名
+        if db.query(user_model.User).filter(
+                user_model.User.username == user_data.username).first():
+            return error_response(code=1001, msg="Username already registered")
+
+        # 再检查邮箱
+        if db.query(user_model.User).filter(
+                user_model.User.email == user_data.email).first():
+            return error_response(code=1002, msg="Email already registered")
+
+        # 尝试创建用户
         user = crud.create_user(db, user_data)
         return success_response(data=user, msg="User registered successfully")
 
     except IntegrityError:
+        # 并发下可能漏网 —— 再兜底
         db.rollback()
-        return error_response(code=1001,
+        return error_response(code=1003,
                               msg="Email or username already registered")
 
     except SQLAlchemyError:
         db.rollback()
-        return error_response(code=1002,
+        return error_response(code=1004,
                               msg="Database error, please try again later")
 
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Notes from "./pages/Notes";
+import Register from "./pages/Register";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(
@@ -38,6 +39,7 @@ function App() {
         path="*"
         element={<Navigate to={isLoggedIn ? "/notes" : "/login"} replace />}
       />
+      <Route path="/register" element={<Register />} />
     </Routes>
   );
 }
