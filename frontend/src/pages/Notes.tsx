@@ -198,22 +198,13 @@ export default function Notes({ onLogout }: NotesProps) {
   }, [activeView, fetchNotes, fetchTags]);
 
   return (
-    <div className="flex min-h-screen w-screen">
-      <img
-        src="/background-1.JPG"
-        alt="背景"
-        className="absolute inset-0 w-full h-full object-cover z-0"
-      />
-      {/* 蒙版 */}
-      <div className="absolute inset-0 bg-black/40 bg-opacity-40 z-0" />
-      {/* 内容容器 */}
-      <div className="flex min-h-screen w-screen relative z-10">
+    <div className="flex min-h-screen w-screen relative overflow-hidden">
         {/* Sidebar */}
         <aside
           className={`${sidebarOpen ? "w-64" : "w-16"
             } bg-white border-r border-gray-200 flex flex-col transition-all`}
         >
-          <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center justify-between p-4 border-b-1 border-gray-200">
             <span className={`${sidebarOpen ? "block" : "hidden"} font-bold`}>
               知识管理系统
             </span>
@@ -229,7 +220,7 @@ export default function Notes({ onLogout }: NotesProps) {
               📁 {sidebarOpen && "我的笔记"}
             </button>
             <button className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left">
-              🌟 {sidebarOpen && "收藏"}
+              ⭐ {sidebarOpen && "收藏"}
             </button>
             <button
               onClick={() => setActiveView('tags')}
@@ -238,7 +229,7 @@ export default function Notes({ onLogout }: NotesProps) {
               <TagIcon size={16} /> {sidebarOpen && "标签管理"}
             </button>
           </nav>
-          <div className="p-4 border-t">
+          <div className="p-4 border-t-1 border-gray-200">
             <button
               onClick={onLogout}
               className="flex items-center gap-2 w-full p-2 rounded hover:bg-red-50 text-red-600"
@@ -250,7 +241,7 @@ export default function Notes({ onLogout }: NotesProps) {
         </aside>
 
         {/* Main */}
-        <main className="flex-1 bg-gray-50 p-6 overflow-y-auto">
+        <main className="flex-1 bg-gray-100 p-6 overflow-y-auto">
           {activeView === 'notes' ? (
             <>
               <header className="flex flex-col sm:flex-row justify-between items-center mb-6">
@@ -431,6 +422,5 @@ export default function Notes({ onLogout }: NotesProps) {
           confirmButtonClass="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
         />
       </div>
-    </div>
   );
 }
