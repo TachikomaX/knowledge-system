@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { register } from "../api/auth";
 import { getErrorMessage } from "../api/http";
-import AlertDialog from "./AlertDialog";
+import AlertDialog from "../components/AlertDialog";
 
 export default function Register() {
     const navigate = useNavigate();

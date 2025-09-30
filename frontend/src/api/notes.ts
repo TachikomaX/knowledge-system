@@ -2,37 +2,10 @@
 
 import api from "./http";
 
-
-// 请求拦截器：自动带上 token
-api.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem("token");
-        if (token) {
-            config.headers["Authorization"] = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
-
-// 响应拦截器 token失效自动跳转登录页
-api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response?.status === 401) {
-            // 清理 token
-            localStorage.removeItem("token");
-            // 跳转到登录页（这里根据你的路由方式调整）
-            window.location.href = "/login";
-        }
-        return Promise.reject(error);
-    }
-);
-
 // -------------------- 笔记管理 --------------------
 
-// 创建笔记（调用AI生成摘要&标签）
-export const createNote = (data: { title: string; content: string }) => {
+// 创建笔记
+export const createNote = (data: { title: string; content: string; tags?: string[]; summary?: string }) => {
     return api.post("/notes", data);
 };
 
@@ -49,7 +22,7 @@ export const getNoteById = (noteId: number) => {
 // 编辑笔记
 export const updateNote = (
     noteId: number,
-    data: { title?: string; content?: string; tags?: string[] }
+    data: { title?: string; content?: string; tags?: string[]; summary?: string }
 ) => {
     return api.put(`/notes/${noteId}`, data);
 };

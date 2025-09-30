@@ -28,10 +28,23 @@ def create_user(db: Session, user: schemas.UserCreate):
 
 
 def create_note(db: Session, user_id: int, note: schemas.NoteCreate):
-    db_note = models.Note(user_id=user_id,
-                          title=note.title,
-                          content=note.content,
-                          summary=note.summary)
+    db_note = models.Note(
+        user_id=user_id,
+        title=note.title,
+        content=note.content,
+        summary=note.summary,
+    )
+
+    # 处理 tags（只允许已有标签）
+    if note.tags:
+        tags = []
+        for tag_id in note.tags:
+            tag = db.query(models.Tag).filter(models.Tag.id == tag_id).first()
+            if not tag:
+                raise ValueError(f"Tag '{tag_id}' does not exist")  # 阻止新建
+            tags.append(tag)
+        db_note.tags = tags
+
     db.add(db_note)
     db.commit()
     db.refresh(db_note)
@@ -53,6 +66,15 @@ def update_note(db: Session, note_id: int, user_id: int,
     if note_update.summary is not None:
         note.summary = note_update.summary
 
+    # 更新 tags（如果传了就整体替换，并严格校验存在性）
+    if note_update.tags is not None:
+        tags = []
+        for tag_id in note_update.tags:
+            tag = db.query(models.Tag).filter(models.Tag.id == tag_id).first()
+            if not tag:
+                return None, f"Tag '{tag_id}' does not exist"
+            tags.append(tag)
+        note.tags = tags
     try:
         db.commit()
         db.refresh(note)
@@ -104,6 +126,7 @@ def search_notes(db: Session,
             func.coalesce(models.Note.summary, '')).op('@@')(
                 func.plainto_tsquery('english',
                                      query))).offset(skip).limit(limit).all()
+
 
 # tag相关
 def create_tag(db: Session, user_id: int, tag_in: schemas.TagCreate):

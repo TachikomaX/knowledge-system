@@ -27,7 +27,7 @@ def create_note(note_data: NoteCreate,
                 current_user: user_model.User = Depends(get_current_user)):
     try:
         # todo 调用AI生成摘要
-        note_data.summary = "from AI"
+        note_data.summary = "summary from AI"
         note = crud.create_note(db, user_id=current_user.id, note=note_data)
         return success_response(data=note, msg="Note created successfully")
     except SQLAlchemyError:
