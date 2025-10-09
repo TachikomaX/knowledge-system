@@ -73,18 +73,24 @@ export default function Notes({ onLogout }: NotesProps) {
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const [tagsLoaded, setTagsLoaded] = useState(false);
 
-  // 获取笔记列表
-  const fetchNotes = useCallback(async () => {
+
+
+  const fetchNotesByTags = useCallback(async (tagIds: number[] = []) => {
     setLoading(true);
     try {
-      const res = await getNotes({ tag_id_list: selectedTagIds });
+      const res = await getNotes({ tag_id_list: tagIds });
       setNotes(res.data.data || []);
     } catch (err) {
       console.error("获取笔记失败:", err);
     } finally {
       setLoading(false);
     }
-  }, [selectedTagIds]);
+  }, []);
+
+  // 获取笔记列表
+  const fetchNotes = useCallback(async () => {
+    await fetchNotesByTags(selectedTagIds);
+  }, [selectedTagIds, fetchNotesByTags]);
 
   // 获取标签列表
   const fetchTags = useCallback(async () => {
@@ -120,20 +126,19 @@ export default function Notes({ onLogout }: NotesProps) {
   // 获取标签并打开下拉
   const handleTagDropdownToggle = async () => {
     if (!isTagDropdownOpen && !tagsLoaded) {
-      await fetchTags(); // 仅在标签未加载时调用
+      await fetchTags();
       setTagsLoaded(true);
     }
-    setIsTagDropdownOpen(!isTagDropdownOpen);
+    setIsTagDropdownOpen(prev => !prev);
   };
 
-  // 避免重复更新标签筛选状态
+  // 选择标签时即时生效（
   const handleTagSelection = (tagId: number, isChecked: boolean) => {
     setSelectedTagIds(prev => {
-      if (isChecked) {
-        return prev.includes(tagId) ? prev : [...prev, tagId];
-      } else {
-        return prev.filter(id => id !== tagId);
-      }
+      const newSelected = isChecked ? (prev.includes(tagId) ? prev : [...prev, tagId]) : prev.filter(id => id !== tagId);
+      // 直接用 newSelected 发起请求（即时生效）
+      fetchNotesByTags(newSelected);
+      return newSelected;
     });
   };
 
@@ -214,20 +219,21 @@ export default function Notes({ onLogout }: NotesProps) {
   };
 
   useEffect(() => {
-    if (activeView === 'notes') {
-      fetchNotes();
-    } else {
-      fetchTags();
-    }
-
     const handleClickOutside = (event: MouseEvent) => {
       if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target as Node)) {
         setIsTagDropdownOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (activeView === 'notes') {
+      fetchNotes();
+    } else {
+      fetchTags();
+    }
   }, [activeView, fetchNotes, fetchTags]);
 
   return (
@@ -309,49 +315,50 @@ export default function Notes({ onLogout }: NotesProps) {
 
               {/* 多选标签筛选器 */}
               <div ref={tagDropdownRef} className="relative">
-                <button
-                  onClick={handleTagDropdownToggle}
-                  className="px-8 py-2 border border-gray-300 rounded-lg flex items-center gap-1 hover:bg-gray-50 transition whitespace-nowrap flex-shrink-0"
-                >
-                  <TagIcon size={16} />
-                  {selectedTagIds.length > 0
-                    ? `${selectedTagIds.length}个标签`
-                    : "标签筛选"}
-                  <svg
-                    className={`w-4 h-4 transition-transform ${isTagDropdownOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleTagDropdownToggle}
+                    className="px-4 py-2 border border-gray-300 rounded-lg flex items-center gap-2 hover:bg-gray-50 transition whitespace-nowrap"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+                    <TagIcon size={16} />
+                    {selectedTagIds.length > 0 ? `${selectedTagIds.length}个标签` : "标签筛选"}
+                    <svg
+                      className={`w-4 h-4 transition-transform ${isTagDropdownOpen ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* 若有已选标签，显示一个小清除按钮，一键清空 */}
+                  {selectedTagIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedTagIds([]); fetchNotes(); }}
+                      className="px-3 py-2 rounded-md text-sm bg-gray-100 hover:bg-gray-200 transition whitespace-nowrap"
+                      aria-label="清除标签筛选"
+                    >
+                      清除已选标签
+                    </button>
+                  )}
+                </div>
+
                 {isTagDropdownOpen && (
                   <div className="absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
-                    <div className="p-2 border-b border-gray-100">
-                      <button
-                        onClick={() => {
-                          setSelectedTagIds([]);
-                          handleSearch(new Event('submit') as unknown as React.FormEvent);
-                          setIsTagDropdownOpen(false);
-                        }}
-                        className="w-full text-left px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded"
-                      >
-                        清除筛选
-                      </button>
-                    </div>
-
                     {loading && tags.length === 0 ? (
                       <div className="p-3 text-center text-gray-500">加载中...</div>
                     ) : (
                       <div className="max-h-48 overflow-y-auto">
                         {tags.map(tag => (
                           <div key={tag.id} className="px-3 py-1 hover:bg-gray-50">
-                            <label className="flex items-center cursor-pointer">
+                            <label className="flex items-center cursor-pointer select-none">
                               <input
                                 type="checkbox"
                                 checked={selectedTagIds.includes(tag.id)}
-                                onChange={(e) => handleTagSelection(tag.id, e.target.checked)} // 调用 handleTagSelection
+                                onChange={(e) => handleTagSelection(tag.id, e.target.checked)}
                                 className="mr-2"
                               />
                               <span className="text-sm">{tag.name}</span>
@@ -360,21 +367,10 @@ export default function Notes({ onLogout }: NotesProps) {
                         ))}
                       </div>
                     )}
-
-                    <div className="p-2 border-t-1 border-gray-100">
-                      <button
-                        onClick={() => {
-                          handleSearch(new Event('submit') as unknown as React.FormEvent);
-                          setIsTagDropdownOpen(false);
-                        }}
-                        className="w-full px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                      >
-                        筛选
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>
+
             </form>
 
             {/* 内容 */}

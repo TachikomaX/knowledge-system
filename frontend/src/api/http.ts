@@ -1,9 +1,15 @@
 // src/api/http.ts
 import axios, { AxiosError } from "axios";
+import qs from "qs";
 
 const api = axios.create({
     baseURL: "http://localhost:8000/api",
     headers: { "Content-Type": "application/json" },
+    withCredentials: true,
+    paramsSerializer: (params) => {
+        // repeat => tag_id_list=2&tag_id_list=3
+        return qs.stringify(params, { arrayFormat: "repeat" });
+    }
 });
 
 // -------------------- 请求拦截器 --------------------

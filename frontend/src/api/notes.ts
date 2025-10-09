@@ -12,11 +12,7 @@ export const createNote = (data: { title: string; content: string; tags?: string
 // 获取笔记列表（分页、标签筛选）
 export const getNotes = (params?: { page?: number; size?: number; tag_id_list?: number[] }) => {
     console.log(params);
-    return api.get("/notes", {
-        params: {
-            ...params,
-        },
-    });
+    return api.get("/notes", { params });
 };
 
 // 查看单条笔记
