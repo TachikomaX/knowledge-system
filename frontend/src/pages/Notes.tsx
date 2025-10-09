@@ -1,6 +1,6 @@
 // src/pages/Notes.tsx
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   getNotes,
   searchNotes,
@@ -68,19 +68,23 @@ export default function Notes({ onLogout }: NotesProps) {
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [currentTag, setCurrentTag] = useState<Tag | null>(null);
   const [tagModalMode, setTagModalMode] = useState<'create' | 'edit'>('create');
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]); // 多选标签ID数组
+  const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
+  const tagDropdownRef = useRef<HTMLDivElement>(null);
+  const [tagsLoaded, setTagsLoaded] = useState(false);
 
   // 获取笔记列表
   const fetchNotes = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await getNotes();
+      const res = await getNotes({ tag_id_list: selectedTagIds });
       setNotes(res.data.data || []);
     } catch (err) {
       console.error("获取笔记失败:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedTagIds]);
 
   // 获取标签列表
   const fetchTags = useCallback(async () => {
@@ -111,6 +115,26 @@ export default function Notes({ onLogout }: NotesProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 获取标签并打开下拉
+  const handleTagDropdownToggle = async () => {
+    if (!isTagDropdownOpen && !tagsLoaded) {
+      await fetchTags(); // 仅在标签未加载时调用
+      setTagsLoaded(true);
+    }
+    setIsTagDropdownOpen(!isTagDropdownOpen);
+  };
+
+  // 避免重复更新标签筛选状态
+  const handleTagSelection = (tagId: number, isChecked: boolean) => {
+    setSelectedTagIds(prev => {
+      if (isChecked) {
+        return prev.includes(tagId) ? prev : [...prev, tagId];
+      } else {
+        return prev.filter(id => id !== tagId);
+      }
+    });
   };
 
   // 笔记相关函数
@@ -195,232 +219,310 @@ export default function Notes({ onLogout }: NotesProps) {
     } else {
       fetchTags();
     }
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target as Node)) {
+        setIsTagDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [activeView, fetchNotes, fetchTags]);
 
   return (
     <div className="flex min-h-screen w-screen relative overflow-hidden">
-        {/* Sidebar */}
-        <aside
-          className={`${sidebarOpen ? "w-64" : "w-16"
-            } bg-white border-r border-gray-200 flex flex-col transition-all`}
-        >
-          <div className="flex items-center justify-between p-4 border-b-1 border-gray-200">
-            <span className={`${sidebarOpen ? "block" : "hidden"} font-bold`}>
-              知识管理系统
-            </span>
-            <button onClick={() => setSidebarOpen(!sidebarOpen)}>
-              {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-          </div>
-          <nav className="flex-1 p-4 space-y-2">
-            <button
-              onClick={() => setActiveView('notes')}
-              className={`flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left ${activeView === 'notes' ? 'bg-blue-50 text-blue-600' : ''}`}
-            >
-              📁 {sidebarOpen && "我的笔记"}
-            </button>
-            <button className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left">
-              ⭐ {sidebarOpen && "收藏"}
-            </button>
-            <button
-              onClick={() => setActiveView('tags')}
-              className={`flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left ${activeView === 'tags' ? 'bg-blue-50 text-blue-600' : ''}`}
-            >
-              <TagIcon size={16} /> {sidebarOpen && "标签管理"}
-            </button>
-          </nav>
-          <div className="p-4 border-t-1 border-gray-200">
-            <button
-              onClick={onLogout}
-              className="flex items-center gap-2 w-full p-2 rounded hover:bg-red-50 text-red-600"
-            >
-              <LogOut size={16} />
-              {sidebarOpen && "退出登录"}
-            </button>
-          </div>
-        </aside>
+      {/* Sidebar */}
+      <aside
+        className={`${sidebarOpen ? "w-64" : "w-16"
+          } bg-white border-r border-gray-200 flex flex-col transition-all`}
+      >
+        <div className="flex items-center justify-between p-4 border-b-1 border-gray-200">
+          <span className={`${sidebarOpen ? "block" : "hidden"} font-bold`}>
+            知识管理系统
+          </span>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)}>
+            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
+        <nav className="flex-1 p-4 space-y-2">
+          <button
+            onClick={() => setActiveView('notes')}
+            className={`flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left ${activeView === 'notes' ? 'bg-blue-50 text-blue-600' : ''}`}
+          >
+            📁 {sidebarOpen && "我的笔记"}
+          </button>
+          <button className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left">
+            ⭐ {sidebarOpen && "收藏"}
+          </button>
+          <button
+            onClick={() => setActiveView('tags')}
+            className={`flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left ${activeView === 'tags' ? 'bg-blue-50 text-blue-600' : ''}`}
+          >
+            <TagIcon size={16} /> {sidebarOpen && "标签管理"}
+          </button>
+        </nav>
+        <div className="p-4 border-t-1 border-gray-200">
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-2 w-full p-2 rounded hover:bg-red-50 text-red-600"
+          >
+            <LogOut size={16} />
+            {sidebarOpen && "退出登录"}
+          </button>
+        </div>
+      </aside>
 
-        {/* Main */}
-        <main className="flex-1 bg-gray-100 p-6 overflow-y-auto">
-          {activeView === 'notes' ? (
-            <>
-              <header className="flex flex-col sm:flex-row justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">我的笔记</h1>
-                <button
-                  onClick={handleCreate}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                >
-                  <FilePlus size={18} />
-                  新建笔记
-                </button>
-              </header>
-
-              {/* 搜索 */}
-              <form
-                onSubmit={handleSearch}
-                className="flex items-center gap-2 mb-6 max-w-md"
+      {/* Main */}
+      <main className="flex-1 bg-gray-100 p-6 overflow-y-auto">
+        {activeView === 'notes' ? (
+          <>
+            <header className="flex flex-col sm:flex-row justify-between items-center mb-6">
+              <h1 className="text-2xl font-bold text-gray-800">我的笔记</h1>
+              <button
+                onClick={handleCreate}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
               >
-                <input
-                  type="text"
-                  placeholder="搜索笔记..."
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  type="submit"
-                  className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                >
-                  <Search size={16} /> 搜索
-                </button>
-              </form>
+                <FilePlus size={18} />
+                新建笔记
+              </button>
+            </header>
 
-              {/* 内容 */}
-              {loading ? (
-                <div className="text-center text-gray-500">加载中...</div>
-              ) : notes.length === 0 ? (
-                <div className="text-center text-gray-500">暂无笔记</div>
-              ) : (
-                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                  {notes.map((note) => (
-                    <div
-                      key={note.id}
-                      className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition cursor-pointer"
-                      onClick={() => handleView(note)} // 👈 点击卡片查看
-                    >
-                      <div className="flex justify-between items-start">
-                        <h2 className="text-lg font-semibold text-gray-800">
-                          {note.title}
-                        </h2>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation(); // 👈 阻止冒泡
-                              handleEdit(note);
-                            }}
-                            className="text-blue-500 hover:text-blue-700"
-                          >
-                            <Edit3 size={16} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation(); // 👈 阻止冒泡
-                              handleDelete(note.id);
-                            }}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-gray-600 mt-2 line-clamp-2">
-                        {note.summary}
-                      </p>
-                      {note.tags?.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {note.tags.map((tag) => (
-                            <span
-                              key={tag.id}
-                              className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full"
-                            >
-                              {tag.name}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+            {/* 搜索 */}
+            <form
+              onSubmit={handleSearch}
+              className="flex items-center gap-2 mb-6 max-w-md"
+            >
+              <input
+                type="text"
+                placeholder="搜索笔记..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="submit"
+                className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition whitespace-nowrap flex-shrink-0"
+              >
+                <Search size={16} /> 搜索
+              </button>
+
+              {/* 多选标签筛选器 */}
+              <div ref={tagDropdownRef} className="relative">
+                <button
+                  onClick={handleTagDropdownToggle}
+                  className="px-8 py-2 border border-gray-300 rounded-lg flex items-center gap-1 hover:bg-gray-50 transition whitespace-nowrap flex-shrink-0"
+                >
+                  <TagIcon size={16} />
+                  {selectedTagIds.length > 0
+                    ? `${selectedTagIds.length}个标签`
+                    : "标签筛选"}
+                  <svg
+                    className={`w-4 h-4 transition-transform ${isTagDropdownOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isTagDropdownOpen && (
+                  <div className="absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                    <div className="p-2 border-b border-gray-100">
+                      <button
+                        onClick={() => {
+                          setSelectedTagIds([]);
+                          handleSearch(new Event('submit') as unknown as React.FormEvent);
+                          setIsTagDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded"
+                      >
+                        清除筛选
+                      </button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            // 标签管理视图
-            <div>
-              <header className="flex flex-col sm:flex-row justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">标签管理</h1>
-                <button
-                  onClick={handleCreateTag}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                >
-                  <Plus size={18} />
-                  新建标签
-                </button>
-              </header>
 
-              {loading ? (
-                <div className="text-center text-gray-500">加载中...</div>
-              ) : tags.length === 0 ? (
-                <div className="text-center text-gray-500">暂无标签</div>
-              ) : (
-                <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                  {tags.map((tag) => (
-                    <div
-                      key={tag.id}
-                      className="bg-white p-4 rounded-lg shadow flex justify-between items-center"
-                    >
-                      <span className="font-medium text-gray-800">{tag.name}</span>
+                    {loading && tags.length === 0 ? (
+                      <div className="p-3 text-center text-gray-500">加载中...</div>
+                    ) : (
+                      <div className="max-h-48 overflow-y-auto">
+                        {tags.map(tag => (
+                          <div key={tag.id} className="px-3 py-1 hover:bg-gray-50">
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedTagIds.includes(tag.id)}
+                                onChange={(e) => handleTagSelection(tag.id, e.target.checked)} // 调用 handleTagSelection
+                                className="mr-2"
+                              />
+                              <span className="text-sm">{tag.name}</span>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="p-2 border-t-1 border-gray-100">
+                      <button
+                        onClick={() => {
+                          handleSearch(new Event('submit') as unknown as React.FormEvent);
+                          setIsTagDropdownOpen(false);
+                        }}
+                        className="w-full px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                      >
+                        筛选
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </form>
+
+            {/* 内容 */}
+            {loading ? (
+              <div className="text-center text-gray-500">加载中...</div>
+            ) : notes.length === 0 ? (
+              <div className="text-center text-gray-500">暂无笔记</div>
+            ) : (
+              <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                {notes.map((note) => (
+                  <div
+                    key={note.id}
+                    className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition cursor-pointer"
+                    onClick={() => handleView(note)} // 👈 点击卡片查看
+                  >
+                    <div className="flex justify-between items-start">
+                      <h2 className="text-lg font-semibold text-gray-800">
+                        {note.title}
+                      </h2>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => handleEditTag(tag)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // 👈 阻止冒泡
+                            handleEdit(note);
+                          }}
                           className="text-blue-500 hover:text-blue-700"
                         >
                           <Edit3 size={16} />
                         </button>
                         <button
-                          onClick={() => handleDeleteTag(tag.id)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // 👈 阻止冒泡
+                            handleDelete(note.id);
+                          }}
                           className="text-red-500 hover:text-red-700"
                         >
                           <Trash2 size={16} />
                         </button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </main>
+                    <p className="text-gray-600 mt-2 line-clamp-2">
+                      {note.summary}
+                    </p>
+                    {note.tags?.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {note.tags.map((tag) => (
+                          <span
+                            key={tag.id}
+                            className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full"
+                          >
+                            {tag.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          // 标签管理视图
+          <div>
+            <header className="flex flex-col sm:flex-row justify-between items-center mb-6">
+              <h1 className="text-2xl font-bold text-gray-800">标签管理</h1>
+              <button
+                onClick={handleCreateTag}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+              >
+                <Plus size={18} />
+                新建标签
+              </button>
+            </header>
 
-        {/* 笔记编辑弹窗 */}
-        <NoteModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSave={async (data) => {
-            try {
-              if (modalMode === 'create') {
-                await createNote({ ...data, tags: data.tags?.map(String) });
-              } else if (modalMode === 'edit' && currentNote) {
-                await updateNote(currentNote.id, { ...data, tags: data.tags?.map(String) });
-              }
-              fetchNotes();
-              setIsModalOpen(false);
-            } catch (err) {
-              console.error(modalMode === 'create' ? '创建失败' : '更新失败', err);
+            {loading ? (
+              <div className="text-center text-gray-500">加载中...</div>
+            ) : tags.length === 0 ? (
+              <div className="text-center text-gray-500">暂无标签</div>
+            ) : (
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                {tags.map((tag) => (
+                  <div
+                    key={tag.id}
+                    className="bg-white p-4 rounded-lg shadow flex justify-between items-center"
+                  >
+                    <span className="font-medium text-gray-800">{tag.name}</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditTag(tag)}
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        <Edit3 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTag(tag.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+
+      {/* 笔记编辑弹窗 */}
+      <NoteModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={async (data) => {
+          try {
+            if (modalMode === 'create') {
+              await createNote({ ...data, tags: data.tags?.map(String) });
+            } else if (modalMode === 'edit' && currentNote) {
+              await updateNote(currentNote.id, { ...data, tags: data.tags?.map(String) });
             }
-          }}
-          note={currentNote}
-          isEditing={modalMode !== 'view'}
-        />
+            fetchNotes();
+            setIsModalOpen(false);
+          } catch (err) {
+            console.error(modalMode === 'create' ? '创建失败' : '更新失败', err);
+          }
+        }}
+        note={currentNote}
+        isEditing={modalMode !== 'view'}
+      />
 
-        {/* 标签编辑弹窗 */}
-        <TagModal
-          isOpen={isTagModalOpen}
-          onClose={() => setIsTagModalOpen(false)}
-          onSave={handleSaveTag}
-          tag={currentTag}
-          mode={tagModalMode}
-        />
+      {/* 标签编辑弹窗 */}
+      <TagModal
+        isOpen={isTagModalOpen}
+        onClose={() => setIsTagModalOpen(false)}
+        onSave={handleSaveTag}
+        tag={currentTag}
+        mode={tagModalMode}
+      />
 
-        {/* 确认弹窗 */}
-        <ConfirmDialog
-          isOpen={confirmDialog.isOpen}
-          title="确认操作"
-          onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
-          onConfirm={confirmDialog.onConfirm}
-          message={confirmDialog.message}
-          confirmText="删除"
-          confirmButtonClass="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-        />
-      </div>
+      {/* 确认弹窗 */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title="确认操作"
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        message={confirmDialog.message}
+        confirmText="删除"
+        confirmButtonClass="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+      />
+    </div>
   );
 }

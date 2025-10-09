@@ -106,7 +106,7 @@ button:focus-visible {
 @media (prefers-color-scheme: dark) {
   :root {
     color: #e5e7eb; /* 灰白文字 */
-    background-color: #111827; /* 深灰背景 */
+    background-color: #1a1c23; /* 更柔和的深灰背景 */
   }
 
   a:hover {
@@ -114,47 +114,36 @@ button:focus-visible {
   }
 
   button {
-    background-color: #1f2937; /* 深灰按钮 */
+    background-color: #2a2f3d; /* 比背景稍亮，形成分层 */
     color: #e5e7eb;
-    border: 1px solid #374151;
+    border: 1px solid #3b4252;
   }
 
   input,
   textarea {
-    background-color: #1f2937;
+    background-color: #2a2f3d;
     color: #f3f4f6;
-    border: 1px solid #374151;
+    border: 1px solid #3b4252;
   }
 
   .sidebar {
-    background-color: #1f2937; /* 深灰侧栏 */
+    background-color: #20232b; /* 略深一点的侧栏 */
     color: #f3f4f6;
-    border-right: 1px solid #374151;
+    border-right: 1px solid #3b4252;
   }
 
   .note-card {
-    background-color: #111827;
-    border: 1px solid #374151;
+    background-color: #2a2f3d; /* 卡片层次感 */
+    border: 1px solid #3b4252;
     color: #e5e7eb;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .note-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.5);
   }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes scaleIn {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.2s ease-out;
-}
-
-.animate-scaleIn {
-  animation: scaleIn 0.2s ease-out;
-}
 

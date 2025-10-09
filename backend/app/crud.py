@@ -4,10 +4,11 @@
 # @File        : crud.py
 # @Description :
 
+from typing import List
 from sqlalchemy import func
 # here put the import lib
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app import auth, models, schemas
 
@@ -183,3 +184,49 @@ def remove_tag_from_note(db: Session, note_id: int, tag_id: int, user_id: int):
         db.commit()
         db.refresh(note)
     return note
+
+
+def get_notes_by_tag_name(db: Session,
+                          user_id: int,
+                          tag_name: str,
+                          skip: int = 0,
+                          limit: int = 20):
+    try:
+        # 子查询优化
+        subquery = (db.query(models.Note.id).join(models.Note.tags).filter(
+            models.Note.user_id == user_id,
+            models.Tag.name == tag_name).offset(skip).limit(limit).subquery())
+
+        # 主查询
+        notes = (
+            db.query(models.Note).filter(models.Note.id.in_(subquery)).options(
+                joinedload(models.Note.tags))  # 预加载 tags
+            .all())
+        return notes
+    except SQLAlchemyError as e:
+        raise e
+
+
+def get_notes_by_tags(db: Session,
+                      user_id: int,
+                      tag_id_list: List[int],
+                      skip: int = 0,
+                      limit: int = 20):
+    try:
+        # 子查询优化：查询符合条件的笔记 ID 并集查找
+        subquery = (
+            db.query(models.Note.id).join(models.Note.tags)  # 关联 tags 表
+            .filter(
+                models.Note.user_id == user_id,
+                models.Tag.id.in_(tag_id_list)  # 根据 tag_id_list 过滤
+            ).group_by(models.Note.id)  # 按笔记分组
+            .offset(skip).limit(limit).subquery())
+
+        # 主查询：根据子查询的笔记 ID 获取完整的笔记数据
+        notes = (
+            db.query(models.Note).filter(models.Note.id.in_(subquery)).options(
+                joinedload(models.Note.tags))  # 预加载 tags
+            .all())
+        return notes
+    except SQLAlchemyError as e:
+        raise e
