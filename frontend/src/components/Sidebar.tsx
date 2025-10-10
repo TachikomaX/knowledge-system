@@ -42,20 +42,23 @@ export default function Sidebar({
             <nav className="flex-1 p-2 space-y-2">
                 <button
                     onClick={() => setActiveView('notes')}
-                    className={`flex items-center ${sidebarOpen ? 'gap-2' : 'justify-center'} p-2 min-w-[48px] h-10 rounded hover:bg-gray-100 w-full text-left ${activeView === 'notes' ? 'bg-blue-50 text-blue-600' : ''}`}
+                    className={`flex items-center ${sidebarOpen ? 'gap-2' : 'justify-center!'} p-2! min-w-[48px]1 h-10 rounded hover:bg-gray-100 w-full text-left ${activeView === 'notes' ? 'bg-blue-50 text-blue-600' : ''}`}
+                    title={sidebarOpen ? "" : "我的笔记"}
                 >
                     <span className="text-xl">📁</span>
                     {sidebarOpen && "我的笔记"}
                 </button>
                 <button
                     onClick={() => setActiveView('favorites')}
-                    className={`flex items-center ${sidebarOpen ? 'gap-2' : 'justify-center'} p-2 min-w-[48px] h-10 rounded hover:bg-gray-100 w-full text-left ${activeView === 'favorites' ? 'bg-blue-50 text-blue-600' : ''}`}
+                    className={`flex items-center ${sidebarOpen ? 'gap-2' : 'justify-center'} p-2! min-w-[48px]1 h-10 rounded hover:bg-gray-100 w-full text-left ${activeView === 'favorites' ? 'bg-blue-50 text-blue-600' : ''}`}
+                    title={sidebarOpen ? "" : "收藏"}
                 >
                     <Heart size={16} className="flex-shrink-0" /> {sidebarOpen && "收藏"}
                 </button>
                 <button
                     onClick={() => setActiveView('tags')}
-                    className={`flex items-center ${sidebarOpen ? 'gap-2' : 'justify-center'} p-2 min-w-[48px] h-10 rounded hover:bg-gray-100 w-full text-left ${activeView === 'tags' ? 'bg-blue-50 text-blue-600' : ''}`}
+                    className={`flex items-center ${sidebarOpen ? 'gap-2' : 'justify-center'} p-2! min-w-[48px]1 h-10 rounded hover:bg-gray-100 w-full text-left ${activeView === 'tags' ? 'bg-blue-50 text-blue-600' : ''}`}
+                    title={sidebarOpen ? "" : "标签管理"}
                 >
                     <TagIcon size={16} className="flex-shrink-0" /> {sidebarOpen && "标签管理"}
                 </button>
@@ -63,7 +66,8 @@ export default function Sidebar({
             <div className="p-2 border-t-1 border-gray-200">
                 <button
                     onClick={onLogout}
-                    className={`flex items-center ${sidebarOpen ? 'gap-2' : 'justify-center'} p-2 min-w-[48px] h-10 w-full rounded hover:bg-red-50 text-red-600`}
+                    className={`flex items-center ${sidebarOpen ? 'gap-2' : 'justify-center'} p-2! min-w-[48px]1 h-10 w-full rounded hover:bg-red-50 text-red-600`}
+                    title={sidebarOpen ? "" : "退出登录"}
                 >
                     <LogOut size={16} className="flex-shrink-0" /> {sidebarOpen && "退出登录"}
                 </button>
