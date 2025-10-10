@@ -7,6 +7,8 @@ import {
   createNote,
   updateNote,
   deleteNote,
+  toggleFavoriteNote,
+  removeFavoriteNote,
 } from "../api/notes";
 import { getTags, createTag, updateTag, deleteTag } from "../api/tags";
 import {
@@ -23,6 +25,7 @@ import {
 import NoteModal from "../components/NoteModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import TagModal from "../components/TagModal";
+import NoteCard from "../components/NoteCard";
 
 interface Tag {
   id: number;
@@ -36,6 +39,7 @@ interface Note {
   summary: string;
   tags: Tag[];
   created_at: string;
+  is_favorited?: boolean; // 收藏状态
 }
 
 interface NotesProps {
@@ -218,6 +222,34 @@ export default function Notes({ onLogout }: NotesProps) {
     }
   };
 
+  const handleToggleFavorite = async (id: number) => {
+    try {
+      // 获取当前笔记
+      const currentNote = notes.find(note => note.id === id);
+      if (!currentNote) return;
+
+      if (currentNote.is_favorited) {
+        // 如果当前是收藏状态，则移出收藏
+        await removeFavoriteNote(id);
+      } else {
+        // 如果当前不是收藏状态，则添加收藏
+        await toggleFavoriteNote(id);
+      }
+
+      // 更新本地状态 - 只翻转当前笔记的收藏状态
+      setNotes(prevNotes =>
+        prevNotes.map(note =>
+          note.id === id
+            ? { ...note, is_favorite: !note.is_favorited }
+            : note
+        )
+      );
+    } catch (error) {
+      console.error("切换收藏状态失败:", error);
+      // 如果API调用失败，不更新本地状态
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target as Node)) {
@@ -381,52 +413,14 @@ export default function Notes({ onLogout }: NotesProps) {
             ) : (
               <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {notes.map((note) => (
-                  <div
+                  <NoteCard
                     key={note.id}
-                    className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition cursor-pointer"
-                    onClick={() => handleView(note)} // 👈 点击卡片查看
-                  >
-                    <div className="flex justify-between items-start">
-                      <h2 className="text-lg font-semibold text-gray-800">
-                        {note.title}
-                      </h2>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation(); // 👈 阻止冒泡
-                            handleEdit(note);
-                          }}
-                          className="text-blue-500 hover:text-blue-700"
-                        >
-                          <Edit3 size={16} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation(); // 👈 阻止冒泡
-                            handleDelete(note.id);
-                          }}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-gray-600 mt-2 line-clamp-2">
-                      {note.summary}
-                    </p>
-                    {note.tags?.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {note.tags.map((tag) => (
-                          <span
-                            key={tag.id}
-                            className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full"
-                          >
-                            {tag.name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                    note={note}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onView={handleView}
+                    onToggleFavorite={handleToggleFavorite}
+                  />
                 ))}
               </div>
             )}

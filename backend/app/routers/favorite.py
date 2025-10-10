@@ -9,7 +9,7 @@ from app.schemas import NoteOut, ResponseBase
 from app.utils.response import error_response, success_response
 
 router = APIRouter(
-    prefix="/favorites",
+    prefix="/api/favorites",
     tags=["favorites"],
 )
 

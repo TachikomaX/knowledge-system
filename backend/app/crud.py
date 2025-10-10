@@ -56,6 +56,8 @@ def create_note(db: Session, user_id: int, note: schemas.NoteCreate):
 def update_note(db: Session, note_id: int, user_id: int,
                 note_update: schemas.NoteUpdate):
     note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    # 判断是否被收藏
+    note.is_favorited = is_note_favorited(db, user_id, note_id)
     if not note:
         return None, "Note not found"
     if note.user_id != user_id:
@@ -104,15 +106,20 @@ def delete_note(db: Session, note_id: int, user_id: int):
 
 # 获取单个笔记
 def get_note(db: Session, note_id: int, user_id: int):
-    note = db.query(models.Note).filter(
-        models.Note.id == note_id, models.Note.user_id == user_id).first()
+    # 查询单个笔记
+    note = (
+        db.query(models.Note).filter(
+            models.Note.id == note_id, models.Note.user_id == user_id).options(
+                joinedload(models.Note.tags))  # 预加载 tags
+        .first())
+
+    if not note:
+        return None
+
+    # 判断是否被收藏
+    note.is_favorited = is_note_favorited(db, user_id, note_id)
+
     return note
-
-
-# 获取当前用户的所有笔记
-def list_notes(db: Session, user_id: int, skip: int = 0, limit: int = 20):
-    return db.query(models.Note).filter(
-        models.Note.user_id == user_id).offset(skip).limit(limit).all()
 
 
 # 简单全文搜索
@@ -121,13 +128,32 @@ def search_notes(db: Session,
                  query: str,
                  skip: int = 0,
                  limit: int = 20):
-    return db.query(models.Note).filter(
-        models.Note.user_id == user_id,
-        func.to_tsvector(
-            'english', models.Note.title + ' ' + models.Note.content + ' ' +
-            func.coalesce(models.Note.summary, '')).op('@@')(
-                func.plainto_tsquery('english',
-                                     query))).offset(skip).limit(limit).all()
+    # 子查询：判断当前用户是否收藏了笔记
+    favorite_subquery = (db.query(models.Favorite.note_id).filter(
+        models.Favorite.user_id == user_id).subquery())
+
+    # 主查询：全文搜索笔记，并附加 is_favorited 字段
+    tmp_notes = (
+        db.query(
+            models.Note,
+            exists().where(
+                models.Note.id == favorite_subquery.c.note_id).label(
+                    "is_favorited")  # 附加布尔字段
+        ).filter(
+            models.Note.user_id == user_id,
+            func.to_tsvector(
+                'english', models.Note.title + ' ' + models.Note.content +
+                ' ' + func.coalesce(models.Note.summary, '')).op('@@')(
+                    func.plainto_tsquery(
+                        'english', query))).offset(skip).limit(limit).all())
+
+    # 将查询结果中的 is_favorited 字段附加到 Note 对象
+    res = []
+    for note, is_favorited in tmp_notes:
+        note.is_favorited = is_favorited
+        res.append(note)
+
+    return res
 
 
 # tag相关
@@ -294,23 +320,27 @@ def get_user_favorite_notes(db: Session,
                             skip: int = 0,
                             limit: int = 20):
     # 查询当前用户收藏的所有笔记，并支持分页和排序
-    res =  (db.query(models.Note).join(
-        models.Favorite, models.Note.id == models.Favorite.note_id).filter(
-            models.Favorite.user_id == user_id).options(
-                joinedload(models.Note.tags))  # 预加载 tags
-            .order_by(models.Favorite.created_at.desc())  # 按收藏时间降序
-            .offset(skip).limit(limit).all())
-    
+    res = (
+        db.query(models.Note).join(
+            models.Favorite, models.Note.id == models.Favorite.note_id).filter(
+                models.Favorite.user_id == user_id).options(
+                    joinedload(models.Note.tags))  # 预加载 tags
+        .order_by(models.Favorite.created_at.desc())  # 按收藏时间降序
+        .offset(skip).limit(limit).all())
+
     for note in res:
         note.is_favorited = True  # 用户的收藏列表，全部标记为已收藏
-    
+
     return res
 
 
 # 判断某笔记是否被用户收藏
 def is_note_favorited(db: Session, user_id: int, note_id: int) -> bool:
-    return db.query(models.Favorite).filter_by(user_id=user_id,
-                                               note_id=note_id).first()
+    if db.query(models.Favorite).filter_by(user_id=user_id,
+                                               note_id=note_id).first():
+        return True
+    else:
+        return False
 
 
 def list_notes_with_favorites(db: Session,
