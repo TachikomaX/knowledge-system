@@ -50,6 +50,7 @@ def create_note(db: Session, user_id: int, note: schemas.NoteCreate):
     db.add(db_note)
     db.commit()
     db.refresh(db_note)
+    db_note.is_favorited = False  # 新建的笔记默认未收藏
     return db_note
 
 
@@ -337,7 +338,7 @@ def get_user_favorite_notes(db: Session,
 # 判断某笔记是否被用户收藏
 def is_note_favorited(db: Session, user_id: int, note_id: int) -> bool:
     if db.query(models.Favorite).filter_by(user_id=user_id,
-                                               note_id=note_id).first():
+                                           note_id=note_id).first():
         return True
     else:
         return False

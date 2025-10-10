@@ -9,6 +9,7 @@ import {
   deleteNote,
   toggleFavoriteNote,
   removeFavoriteNote,
+  getFavoriteNotes, // 新增导入
 } from "../api/notes";
 import { getTags, createTag, updateTag, deleteTag } from "../api/tags";
 import {
@@ -21,6 +22,7 @@ import {
   LogOut,
   Plus,
   Tag as TagIcon,
+  Heart, // 新增导入
 } from "lucide-react";
 import NoteModal from "../components/NoteModal";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -52,7 +54,7 @@ export default function Notes({ onLogout }: NotesProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [query, setQuery] = useState<string>("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeView, setActiveView] = useState<'notes' | 'tags'>('notes');
+  const [activeView, setActiveView] = useState<'notes' | 'tags' | 'favorites'>('notes');
 
   // 笔记相关状态
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -77,8 +79,6 @@ export default function Notes({ onLogout }: NotesProps) {
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const [tagsLoaded, setTagsLoaded] = useState(false);
 
-
-
   const fetchNotesByTags = useCallback(async (tagIds: number[] = []) => {
     setLoading(true);
     try {
@@ -95,6 +95,19 @@ export default function Notes({ onLogout }: NotesProps) {
   const fetchNotes = useCallback(async () => {
     await fetchNotesByTags(selectedTagIds);
   }, [selectedTagIds, fetchNotesByTags]);
+
+  // 获取收藏笔记列表
+  const fetchFavoriteNotes = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await getFavoriteNotes();
+      setNotes(res.data.data || []);
+    } catch (err) {
+      console.error("获取收藏笔记失败:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // 获取标签列表
   const fetchTags = useCallback(async () => {
@@ -113,7 +126,11 @@ export default function Notes({ onLogout }: NotesProps) {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query) {
-      fetchNotes();
+      if (activeView === 'favorites') {
+        fetchFavoriteNotes();
+      } else {
+        fetchNotes();
+      }
       return;
     }
     setLoading(true);
@@ -136,7 +153,7 @@ export default function Notes({ onLogout }: NotesProps) {
     setIsTagDropdownOpen(prev => !prev);
   };
 
-  // 选择标签时即时生效（
+  // 选择标签时即时生效
   const handleTagSelection = (tagId: number, isChecked: boolean) => {
     setSelectedTagIds(prev => {
       const newSelected = isChecked ? (prev.includes(tagId) ? prev : [...prev, tagId]) : prev.filter(id => id !== tagId);
@@ -172,7 +189,11 @@ export default function Notes({ onLogout }: NotesProps) {
       onConfirm: async () => {
         try {
           await deleteNote(id);
-          fetchNotes();
+          if (activeView === 'favorites') {
+            fetchFavoriteNotes();
+          } else {
+            fetchNotes();
+          }
         } catch (err) {
           console.error("删除失败:", err);
         }
@@ -240,10 +261,15 @@ export default function Notes({ onLogout }: NotesProps) {
       setNotes(prevNotes =>
         prevNotes.map(note =>
           note.id === id
-            ? { ...note, is_favorite: !note.is_favorited }
+            ? { ...note, is_favorited: !note.is_favorited }
             : note
         )
       );
+
+      // 如果当前在收藏页面，需要刷新页面以获取最新数据
+      if (activeView === 'favorites') {
+        setTimeout(() => fetchFavoriteNotes(), 100); // 延迟刷新，确保状态更新
+      }
     } catch (error) {
       console.error("切换收藏状态失败:", error);
       // 如果API调用失败，不更新本地状态
@@ -263,215 +289,279 @@ export default function Notes({ onLogout }: NotesProps) {
   useEffect(() => {
     if (activeView === 'notes') {
       fetchNotes();
-    } else {
+    } else if (activeView === 'tags') {
       fetchTags();
+    } else if (activeView === 'favorites') {
+      fetchFavoriteNotes();
     }
-  }, [activeView, fetchNotes, fetchTags]);
+  }, [activeView, fetchNotes, fetchTags, fetchFavoriteNotes]);
 
   return (
     <div className="flex min-h-screen w-screen relative overflow-hidden">
-      {/* Sidebar */}
-      <aside
-        className={`${sidebarOpen ? "w-64" : "w-16"
-          } bg-white border-r border-gray-200 flex flex-col transition-all`}
-      >
-        <div className="flex items-center justify-between p-4 border-b-1 border-gray-200">
-          <span className={`${sidebarOpen ? "block" : "hidden"} font-bold`}>
-            知识管理系统
-          </span>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)}>
-            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
-        <nav className="flex-1 p-4 space-y-2">
-          <button
-            onClick={() => setActiveView('notes')}
-            className={`flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left ${activeView === 'notes' ? 'bg-blue-50 text-blue-600' : ''}`}
-          >
-            📁 {sidebarOpen && "我的笔记"}
-          </button>
-          <button className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left">
-            ⭐ {sidebarOpen && "收藏"}
-          </button>
-          <button
-            onClick={() => setActiveView('tags')}
-            className={`flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left ${activeView === 'tags' ? 'bg-blue-50 text-blue-600' : ''}`}
-          >
-            <TagIcon size={16} /> {sidebarOpen && "标签管理"}
-          </button>
-        </nav>
-        <div className="p-4 border-t-1 border-gray-200">
-          <button
-            onClick={onLogout}
-            className="flex items-center gap-2 w-full p-2 rounded hover:bg-red-50 text-red-600"
-          >
-            <LogOut size={16} />
-            {sidebarOpen && "退出登录"}
-          </button>
-        </div>
-      </aside>
+      {/* 背景图片 */}
+      <img
+        src="/background-1.JPG"
+        alt="背景"
+        className="absolute inset-0 w-full h-full object-cover z-0"
+      />
+      {/* 蒙版 */}
+      <div className="absolute inset-0 bg-black/40 z-0" />
 
-      {/* Main */}
-      <main className="flex-1 bg-gray-100 p-6 overflow-y-auto">
-        {activeView === 'notes' ? (
-          <>
-            <header className="flex flex-col sm:flex-row justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold text-gray-800">我的笔记</h1>
-              <button
-                onClick={handleCreate}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-              >
-                <FilePlus size={18} />
-                新建笔记
-              </button>
-            </header>
-
-            {/* 搜索 */}
-            <form
-              onSubmit={handleSearch}
-              className="flex items-center gap-2 mb-6 max-w-md"
+      {/* 内容容器 */}
+      <div className="flex min-h-screen w-screen relative z-10">
+        {/* Sidebar */}
+        <aside
+          className={`${sidebarOpen ? "w-64" : "w-16"
+            } bg-white border-r border-gray-200 flex flex-col transition-all`}
+        >
+          <div className="flex items-center justify-between p-4 border-b-1 border-gray-200">
+            <span className={`${sidebarOpen ? "block" : "hidden"} font-bold`}>
+              知识管理系统
+            </span>
+            <button onClick={() => setSidebarOpen(!sidebarOpen)}>
+              {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
+          <nav className="flex-1 p-4 space-y-2">
+            <button
+              onClick={() => setActiveView('notes')}
+              className={`flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left ${activeView === 'notes' ? 'bg-blue-50 text-blue-600' : ''}`}
             >
-              <input
-                type="text"
-                placeholder="搜索笔记..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                type="submit"
-                className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition whitespace-nowrap flex-shrink-0"
+              📁 {sidebarOpen && "我的笔记"}
+            </button>
+            <button
+              onClick={() => setActiveView('favorites')}
+              className={`flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left ${activeView === 'favorites' ? 'bg-blue-50 text-blue-600' : ''}`}
+            >
+              <Heart size={16} /> {sidebarOpen && "收藏"}
+            </button>
+            <button
+              onClick={() => setActiveView('tags')}
+              className={`flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left ${activeView === 'tags' ? 'bg-blue-50 text-blue-600' : ''}`}
+            >
+              <TagIcon size={16} /> {sidebarOpen && "标签管理"}
+            </button>
+          </nav>
+          <div className="p-4 border-t-1 border-gray-200">
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-2 w-full p-2 rounded hover:bg-red-50 text-red-600"
+            >
+              <LogOut size={16} />
+              {sidebarOpen && "退出登录"}
+            </button>
+          </div>
+        </aside>
+
+        {/* Main */}
+        <main className="flex-1 bg-gray-100 p-6 overflow-y-auto">
+          {activeView === 'notes' ? (
+            <>
+              <header className="flex flex-col sm:flex-row justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold text-gray-800">我的笔记</h1>
+                <button
+                  onClick={handleCreate}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                >
+                  <FilePlus size={18} />
+                  新建笔记
+                </button>
+              </header>
+
+              {/* 搜索 */}
+              <form
+                onSubmit={handleSearch}
+                className="flex items-center gap-2 mb-6 max-w-md"
               >
-                <Search size={16} /> 搜索
-              </button>
+                <input
+                  type="text"
+                  placeholder="搜索笔记..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="submit"
+                  className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition whitespace-nowrap flex-shrink-0"
+                >
+                  <Search size={16} /> 搜索
+                </button>
 
-              {/* 多选标签筛选器 */}
-              <div ref={tagDropdownRef} className="relative">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleTagDropdownToggle}
-                    className="px-4 py-2 border border-gray-300 rounded-lg flex items-center gap-2 hover:bg-gray-50 transition whitespace-nowrap"
-                  >
-                    <TagIcon size={16} />
-                    {selectedTagIds.length > 0 ? `${selectedTagIds.length}个标签` : "标签筛选"}
-                    <svg
-                      className={`w-4 h-4 transition-transform ${isTagDropdownOpen ? 'rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-
-                  {/* 若有已选标签，显示一个小清除按钮，一键清空 */}
-                  {selectedTagIds.length > 0 && (
+                {/* 多选标签筛选器 */}
+                <div ref={tagDropdownRef} className="relative">
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => { setSelectedTagIds([]); fetchNotes(); }}
-                      className="px-3 py-2 rounded-md text-sm bg-gray-100 hover:bg-gray-200 transition whitespace-nowrap"
-                      aria-label="清除标签筛选"
+                      onClick={handleTagDropdownToggle}
+                      className="px-4 py-2 border border-gray-300 rounded-lg flex items-center gap-2 hover:bg-gray-50 transition whitespace-nowrap"
                     >
-                      清除已选标签
+                      <TagIcon size={16} />
+                      {selectedTagIds.length > 0 ? `${selectedTagIds.length}个标签` : "标签筛选"}
+                      <svg
+                        className={`w-4 h-4 transition-transform ${isTagDropdownOpen ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
                     </button>
+
+                    {/* 若有已选标签，显示一个小清除按钮，一键清空 */}
+                    {selectedTagIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedTagIds([]); fetchNotes(); }}
+                        className="px-3 py-2 rounded-md text-sm bg-gray-100 hover:bg-gray-200 transition whitespace-nowrap"
+                        aria-label="清除标签筛选"
+                      >
+                        清除已选标签
+                      </button>
+                    )}
+                  </div>
+
+                  {isTagDropdownOpen && (
+                    <div className="absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                      {loading && tags.length === 0 ? (
+                        <div className="p-3 text-center text-gray-500">加载中...</div>
+                      ) : (
+                        <div className="max-h-48 overflow-y-auto">
+                          {tags.map(tag => (
+                            <div key={tag.id} className="px-3 py-1 hover:bg-gray-50">
+                              <label className="flex items-center cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedTagIds.includes(tag.id)}
+                                  onChange={(e) => handleTagSelection(tag.id, e.target.checked)}
+                                  className="mr-2"
+                                />
+                                <span className="text-sm">{tag.name}</span>
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
 
-                {isTagDropdownOpen && (
-                  <div className="absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
-                    {loading && tags.length === 0 ? (
-                      <div className="p-3 text-center text-gray-500">加载中...</div>
-                    ) : (
-                      <div className="max-h-48 overflow-y-auto">
-                        {tags.map(tag => (
-                          <div key={tag.id} className="px-3 py-1 hover:bg-gray-50">
-                            <label className="flex items-center cursor-pointer select-none">
-                              <input
-                                type="checkbox"
-                                checked={selectedTagIds.includes(tag.id)}
-                                onChange={(e) => handleTagSelection(tag.id, e.target.checked)}
-                                className="mr-2"
-                              />
-                              <span className="text-sm">{tag.name}</span>
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+              </form>
 
-            </form>
+              {/* 内容 */}
+              {loading ? (
+                <div className="text-center text-gray-500">加载中...</div>
+              ) : notes.length === 0 ? (
+                <div className="text-center text-gray-500">暂无笔记</div>
+              ) : (
+                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {notes.map((note) => (
+                    <NoteCard
+                      key={note.id}
+                      note={note}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onView={handleView}
+                      onToggleFavorite={handleToggleFavorite}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          ) : activeView === 'favorites' ? (
+            // 收藏页面
+            <div>
+              <header className="flex flex-col sm:flex-row justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold text-gray-800">我的收藏</h1>
+              </header>
 
-            {/* 内容 */}
-            {loading ? (
-              <div className="text-center text-gray-500">加载中...</div>
-            ) : notes.length === 0 ? (
-              <div className="text-center text-gray-500">暂无笔记</div>
-            ) : (
-              <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                {notes.map((note) => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onView={handleView}
-                    onToggleFavorite={handleToggleFavorite}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        ) : (
-          // 标签管理视图
-          <div>
-            <header className="flex flex-col sm:flex-row justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold text-gray-800">标签管理</h1>
-              <button
-                onClick={handleCreateTag}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+              {/* 搜索 */}
+              <form
+                onSubmit={handleSearch}
+                className="flex items-center gap-2 mb-6 max-w-md"
               >
-                <Plus size={18} />
-                新建标签
-              </button>
-            </header>
+                <input
+                  type="text"
+                  placeholder="搜索收藏笔记..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="submit"
+                  className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition whitespace-nowrap flex-shrink-0"
+                >
+                  <Search size={16} /> 搜索
+                </button>
+              </form>
 
-            {loading ? (
-              <div className="text-center text-gray-500">加载中...</div>
-            ) : tags.length === 0 ? (
-              <div className="text-center text-gray-500">暂无标签</div>
-            ) : (
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {tags.map((tag) => (
-                  <div
-                    key={tag.id}
-                    className="bg-white p-4 rounded-lg shadow flex justify-between items-center"
-                  >
-                    <span className="font-medium text-gray-800">{tag.name}</span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEditTag(tag)}
-                        className="text-blue-500 hover:text-blue-700"
-                      >
-                        <Edit3 size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteTag(tag.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+              {/* 收藏笔记内容 */}
+              {loading ? (
+                <div className="text-center text-gray-500">加载中...</div>
+              ) : notes.length === 0 ? (
+                <div className="text-center text-gray-500">暂无收藏笔记</div>
+              ) : (
+                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {notes.map((note) => (
+                    <NoteCard
+                      key={note.id}
+                      note={note}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onView={handleView}
+                      onToggleFavorite={handleToggleFavorite}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            // 标签管理视图
+            <div>
+              <header className="flex flex-col sm:flex-row justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold text-gray-800">标签管理</h1>
+                <button
+                  onClick={handleCreateTag}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                >
+                  <Plus size={18} />
+                  新建标签
+                </button>
+              </header>
+
+              {loading ? (
+                <div className="text-center text-gray-500">加载中...</div>
+              ) : tags.length === 0 ? (
+                <div className="text-center text-gray-500">暂无标签</div>
+              ) : (
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                  {tags.map((tag) => (
+                    <div
+                      key={tag.id}
+                      className="bg-white p-4 rounded-lg shadow flex justify-between items-center"
+                    >
+                      <span className="font-medium text-gray-800">{tag.name}</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditTag(tag)}
+                          className="text-blue-500 hover:text-blue-700"
+                        >
+                          <Edit3 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTag(tag.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </main>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </main>
+      </div>
 
       {/* 笔记编辑弹窗 */}
       <NoteModal
@@ -484,7 +574,11 @@ export default function Notes({ onLogout }: NotesProps) {
             } else if (modalMode === 'edit' && currentNote) {
               await updateNote(currentNote.id, { ...data, tags: data.tags?.map(String) });
             }
-            fetchNotes();
+            if (activeView === 'favorites') {
+              fetchFavoriteNotes();
+            } else {
+              fetchNotes();
+            }
             setIsModalOpen(false);
           } catch (err) {
             console.error(modalMode === 'create' ? '创建失败' : '更新失败', err);

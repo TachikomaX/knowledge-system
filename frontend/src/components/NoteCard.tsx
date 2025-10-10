@@ -46,31 +46,36 @@ export default function NoteCard({ note, onEdit, onDelete, onView, onToggleFavor
                 <h2 className="text-lg font-semibold text-gray-800">
                     {note.title}
                 </h2>
-                <div className="flex gap-2">
+                <div className="flex gap-1">
+                    {/* 收藏按钮 - 使用 !important 强制覆盖全局样式 */}
                     <button
                         onClick={handleFavoriteClick}
-                        className={`hover:text-red-500 transition ${isFavorite ? 'text-red-500!' : 'text-gray-400'
+                        className={`w-7 h-7 flex items-center justify-center rounded-md hover:text-red-500 transition !bg-transparent !border-none !p-0 ${isFavorite ? 'text-red-500!' : 'text-gray-400'
                             }`}
                     >
-                        <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
+                        <Heart size={14} fill={isFavorite ? 'currentColor' : 'none'} />
                     </button>
+
+                    {/* 编辑按钮 - 使用 !important 强制覆盖全局样式 */}
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
                             onEdit(note);
                         }}
-                        className="text-blue-500 hover:text-blue-700"
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-blue-500 hover:text-blue-700 !bg-transparent !border-none !p-0"
                     >
-                        <Edit3 size={16} />
+                        <Edit3 size={14} />
                     </button>
+
+                    {/* 删除按钮 - 使用 !important 强制覆盖全局样式 */}
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
                             onDelete(note.id);
                         }}
-                        className="text-red-500 hover:text-red-700"
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-red-500 hover:text-red-700 !bg-transparent !border-none !p-0"
                     >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                     </button>
                 </div>
             </div>
