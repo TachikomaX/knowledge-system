@@ -13,21 +13,17 @@ import {
 } from "../api/notes";
 import { getTags, createTag, updateTag, deleteTag } from "../api/tags";
 import {
-  Menu,
-  X,
   FilePlus,
   Search,
-  Edit3,
-  Trash2,
-  LogOut,
   Plus,
   Tag as TagIcon,
-  Heart, // 新增导入
 } from "lucide-react";
 import NoteModal from "../components/NoteModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import TagModal from "../components/TagModal";
 import NoteCard from "../components/NoteCard";
+import Sidebar from "../components/Sidebar";
+import TagCard from "../components/TagCard";
 
 interface Tag {
   id: number;
@@ -310,49 +306,13 @@ export default function Notes({ onLogout }: NotesProps) {
       {/* 内容容器 */}
       <div className="flex min-h-screen w-screen relative z-10">
         {/* Sidebar */}
-        <aside
-          className={`${sidebarOpen ? "w-64" : "w-16"
-            } bg-white border-r border-gray-200 flex flex-col transition-all`}
-        >
-          <div className="flex items-center justify-between p-4 border-b-1 border-gray-200">
-            <span className={`${sidebarOpen ? "block" : "hidden"} font-bold`}>
-              知识管理系统
-            </span>
-            <button onClick={() => setSidebarOpen(!sidebarOpen)}>
-              {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-          </div>
-          <nav className="flex-1 p-4 space-y-2">
-            <button
-              onClick={() => setActiveView('notes')}
-              className={`flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left ${activeView === 'notes' ? 'bg-blue-50 text-blue-600' : ''}`}
-            >
-              📁 {sidebarOpen && "我的笔记"}
-            </button>
-            <button
-              onClick={() => setActiveView('favorites')}
-              className={`flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left ${activeView === 'favorites' ? 'bg-blue-50 text-blue-600' : ''}`}
-            >
-              <Heart size={16} /> {sidebarOpen && "收藏"}
-            </button>
-            <button
-              onClick={() => setActiveView('tags')}
-              className={`flex items-center gap-2 p-2 rounded hover:bg-gray-100 w-full text-left ${activeView === 'tags' ? 'bg-blue-50 text-blue-600' : ''}`}
-            >
-              <TagIcon size={16} /> {sidebarOpen && "标签管理"}
-            </button>
-          </nav>
-          <div className="p-4 border-t-1 border-gray-200">
-            <button
-              onClick={onLogout}
-              className="flex items-center gap-2 w-full p-2 rounded hover:bg-red-50 text-red-600"
-            >
-              <LogOut size={16} />
-              {sidebarOpen && "退出登录"}
-            </button>
-          </div>
-        </aside>
-
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          activeView={activeView}
+          setActiveView={setActiveView}
+          onLogout={onLogout}
+        />
         {/* Main */}
         <main className="flex-1 bg-gray-100 p-6 overflow-y-auto">
           {activeView === 'notes' ? (
@@ -535,26 +495,12 @@ export default function Notes({ onLogout }: NotesProps) {
               ) : (
                 <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                   {tags.map((tag) => (
-                    <div
+                    <TagCard
                       key={tag.id}
-                      className="bg-white p-4 rounded-lg shadow flex justify-between items-center"
-                    >
-                      <span className="font-medium text-gray-800">{tag.name}</span>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditTag(tag)}
-                          className="text-blue-500 hover:text-blue-700"
-                        >
-                          <Edit3 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteTag(tag.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
+                      tag={tag}
+                      onEdit={handleEditTag}
+                      onDelete={handleDeleteTag}
+                    />
                   ))}
                 </div>
               )}
