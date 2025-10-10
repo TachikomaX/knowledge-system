@@ -5,7 +5,8 @@
 # @Description :
 
 from typing import List
-from sqlalchemy import func
+
+from sqlalchemy import exists, func
 # here put the import lib
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
@@ -213,8 +214,12 @@ def get_notes_by_tags(db: Session,
                       skip: int = 0,
                       limit: int = 20):
     try:
-        # 子查询优化：查询符合条件的笔记 ID 并集查找
-        subquery = (
+        # 子查询：判断当前用户是否收藏了笔记
+        favorite_subquery = (db.query(models.Favorite.note_id).filter(
+            models.Favorite.user_id == user_id).subquery())
+
+        # 子查询：查询符合条件的笔记 ID
+        note_subquery = (
             db.query(models.Note.id).join(models.Note.tags)  # 关联 tags 表
             .filter(
                 models.Note.user_id == user_id,
@@ -222,11 +227,115 @@ def get_notes_by_tags(db: Session,
             ).group_by(models.Note.id)  # 按笔记分组
             .offset(skip).limit(limit).subquery())
 
-        # 主查询：根据子查询的笔记 ID 获取完整的笔记数据
-        notes = (
-            db.query(models.Note).filter(models.Note.id.in_(subquery)).options(
+        # 主查询：根据子查询的笔记 ID 获取完整的笔记数据，并附加 is_favorited 字段
+        tmp_notes = (
+            db.query(
+                models.Note,
+                exists().where(
+                    models.Note.id == favorite_subquery.c.note_id).label(
+                        "is_favorited")  # 附加布尔字段
+            ).filter(models.Note.id.in_(note_subquery)).options(
                 joinedload(models.Note.tags))  # 预加载 tags
             .all())
-        return notes
+
+        # 将查询结果中的 is_favorited 字段附加到 Note 对象
+        res = []
+        for note, is_favorited in tmp_notes:
+            note.is_favorited = is_favorited
+            res.append(note)
+
+        return res
     except SQLAlchemyError as e:
         raise e
+
+
+# 添加收藏
+def add_favorite(db: Session, user_id: int, note_id: int):
+    note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    if not note:
+        return None, "Note not found"
+
+    # 检查是否已收藏
+    existing = db.query(models.Favorite).filter_by(user_id=user_id,
+                                                   note_id=note_id).first()
+    if existing:
+        return None, "Already favorited"
+
+    try:
+        favorite = models.Favorite(user_id=user_id, note_id=note_id)
+        db.add(favorite)
+        db.commit()
+        db.refresh(favorite)
+        return favorite, None
+    except SQLAlchemyError as e:
+        db.rollback()
+        return None, str(e)
+
+
+# 取消收藏
+def remove_favorite(db: Session, user_id: int, note_id: int):
+    favorite = db.query(models.Favorite).filter_by(user_id=user_id,
+                                                   note_id=note_id).first()
+    if not favorite:
+        return None, "Not favorited"
+
+    try:
+        db.delete(favorite)
+        db.commit()
+        return True, None
+    except SQLAlchemyError as e:
+        db.rollback()
+        return None, str(e)
+
+
+# 获取用户收藏列表
+def get_user_favorite_notes(db: Session,
+                            user_id: int,
+                            skip: int = 0,
+                            limit: int = 20):
+    # 查询当前用户收藏的所有笔记，并支持分页和排序
+    res =  (db.query(models.Note).join(
+        models.Favorite, models.Note.id == models.Favorite.note_id).filter(
+            models.Favorite.user_id == user_id).options(
+                joinedload(models.Note.tags))  # 预加载 tags
+            .order_by(models.Favorite.created_at.desc())  # 按收藏时间降序
+            .offset(skip).limit(limit).all())
+    
+    for note in res:
+        note.is_favorited = True  # 用户的收藏列表，全部标记为已收藏
+    
+    return res
+
+
+# 判断某笔记是否被用户收藏
+def is_note_favorited(db: Session, user_id: int, note_id: int) -> bool:
+    return db.query(models.Favorite).filter_by(user_id=user_id,
+                                               note_id=note_id).first()
+
+
+def list_notes_with_favorites(db: Session,
+                              user_id: int,
+                              skip: int = 0,
+                              limit: int = 20):
+    # 子查询：判断当前用户是否收藏了笔记
+    favorite_subquery = (db.query(models.Favorite.note_id).filter(
+        models.Favorite.user_id == user_id).subquery())
+
+    # 主查询：查询笔记并附加 is_favorited 字段
+    tmp_notes = (
+        db.query(
+            models.Note,
+            exists().where(
+                models.Note.id == favorite_subquery.c.note_id).label(
+                    "is_favorited")  # 附加布尔字段
+        ).filter(models.Note.user_id == user_id).options(
+            joinedload(models.Note.tags))  # 预加载 tags
+        .offset(skip).limit(limit).all())
+
+    # 将查询结果中的 is_favorited 字段附加到 Note 对象
+    res = []
+    for note, is_favorited in tmp_notes:
+        note.is_favorited = is_favorited
+        res.append(note)
+
+    return res

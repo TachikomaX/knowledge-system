@@ -32,3 +32,6 @@ class Note(Base):
 
     user = relationship("User", backref="notes")
     tags = relationship("Tag", secondary=note_tags, back_populates="notes")
+    favorites = relationship("Favorite",
+                             back_populates="note",
+                             cascade="all, delete-orphan")

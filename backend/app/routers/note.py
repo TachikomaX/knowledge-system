@@ -119,8 +119,8 @@ def list_notes(
                                        skip=skip,
                                        limit=limit)
     else:
-        notes = crud.list_notes(db,
-                                user_id=current_user.id,
-                                skip=skip,
-                                limit=limit)
+        notes = crud.list_notes_with_favorites(db,
+                                               user_id=current_user.id,
+                                               skip=skip,
+                                               limit=limit)
     return success_response(data=notes, msg="Notes retrieved successfully")

@@ -92,6 +92,7 @@ class NoteOut(NoteBase):
     created_at: datetime
     updated_at: datetime
     tags: List[TagOut] = []
+    is_favorited: bool
 
     class Config:
         orm_mode = True

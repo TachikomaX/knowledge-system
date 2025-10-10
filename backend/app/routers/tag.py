@@ -4,14 +4,16 @@
 # @File        : tag.py
 # @Description :
 
+from typing import List
+
 # routers/tags.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+
 from app import crud, models
-from app.db import get_db
 from app.auth import get_current_user
-from app.schemas import TagOut, ResponseBase, TagCreate, TagUpdate
+from app.db import get_db
+from app.schemas import ResponseBase, TagCreate, TagOut, TagUpdate
 
 router = APIRouter(prefix="/api/tags", tags=["tags"])
 
