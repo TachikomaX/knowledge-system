@@ -15,8 +15,8 @@ from app import crud
 from app.auth import get_current_user
 from app.db import get_db
 from app.models import user as user_model
-from app.schemas import NoteCreate, NoteOut, NoteUpdate, ResponseBase
-from app.utils.response import error_response, success_response
+from app.schemas import NoteCreate, NoteOut, NoteUpdate, ResponseBase, ResponseWithTotal
+from app.utils.response import error_response, success_response, success_response_for_notes
 
 router = APIRouter(prefix="/api/notes", tags=["notes"])
 
@@ -104,7 +104,7 @@ def get_note(
     )
 
 
-@router.get("", response_model=ResponseBase[List[NoteOut]])
+@router.get("", response_model=ResponseWithTotal[List[NoteOut]])
 def list_notes(
         tag_id_list: List[int] = Query([], description="标签 ID 列表"),  # 标签名称
         skip: int = 0,
@@ -113,14 +113,16 @@ def list_notes(
         current_user: user_model.User = Depends(get_current_user),
 ):
     if tag_id_list:
-        notes = crud.get_notes_by_tags(db,
-                                       user_id=current_user.id,
-                                       tag_id_list=tag_id_list,
-                                       skip=skip,
-                                       limit=limit)
+        res = crud.get_notes_by_tags(db,
+                                     user_id=current_user.id,
+                                     tag_id_list=tag_id_list,
+                                     skip=skip,
+                                     limit=limit)
     else:
-        notes = crud.list_notes_with_favorites(db,
-                                               user_id=current_user.id,
-                                               skip=skip,
-                                               limit=limit)
-    return success_response(data=notes, msg="Notes retrieved successfully")
+        res = crud.list_notes_with_favorites(db,
+                                             user_id=current_user.id,
+                                             skip=skip,
+                                             limit=limit)
+    return success_response_for_notes(data=res.get('notes', []),
+                                      msg="Notes retrieved successfully",
+                                      total=res.get('total', 0))

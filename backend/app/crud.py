@@ -214,33 +214,20 @@ def remove_tag_from_note(db: Session, note_id: int, tag_id: int, user_id: int):
     return note
 
 
-def get_notes_by_tag_name(db: Session,
-                          user_id: int,
-                          tag_name: str,
-                          skip: int = 0,
-                          limit: int = 20):
-    try:
-        # 子查询优化
-        subquery = (db.query(models.Note.id).join(models.Note.tags).filter(
-            models.Note.user_id == user_id,
-            models.Tag.name == tag_name).offset(skip).limit(limit).subquery())
-
-        # 主查询
-        notes = (
-            db.query(models.Note).filter(models.Note.id.in_(subquery)).options(
-                joinedload(models.Note.tags))  # 预加载 tags
-            .all())
-        return notes
-    except SQLAlchemyError as e:
-        raise e
-
-
 def get_notes_by_tags(db: Session,
                       user_id: int,
                       tag_id_list: List[int],
                       skip: int = 0,
                       limit: int = 20):
     try:
+        # 查询总记录数
+        total = (
+            db.query(models.Note).join(models.Note.tags)  # 关联 tags 表
+            .filter(
+                models.Note.user_id == user_id,
+                models.Tag.id.in_(tag_id_list)  # 根据 tag_id_list 过滤
+            ).group_by(models.Note.id)  # 按笔记分组
+            .count())
         # 子查询：判断当前用户是否收藏了笔记
         favorite_subquery = (db.query(models.Favorite.note_id).filter(
             models.Favorite.user_id == user_id).subquery())
@@ -263,6 +250,7 @@ def get_notes_by_tags(db: Session,
                         "is_favorited")  # 附加布尔字段
             ).filter(models.Note.id.in_(note_subquery)).options(
                 joinedload(models.Note.tags))  # 预加载 tags
+            .order_by(models.Note.updated_at.desc())  # 按修改时间降序
             .all())
 
         # 将查询结果中的 is_favorited 字段附加到 Note 对象
@@ -271,7 +259,7 @@ def get_notes_by_tags(db: Session,
             note.is_favorited = is_favorited
             res.append(note)
 
-        return res
+        return {"total": total, "notes": res}
     except SQLAlchemyError as e:
         raise e
 
@@ -320,7 +308,10 @@ def get_user_favorite_notes(db: Session,
                             user_id: int,
                             skip: int = 0,
                             limit: int = 20):
-    # 查询当前用户收藏的所有笔记，并支持分页和排序
+    # 查询总记录数
+    total = (db.query(
+        models.Note).filter(models.Note.user_id == user_id).count())
+    # 查询当前用户收藏的所有笔记，并支持分页
     res = (
         db.query(models.Note).join(
             models.Favorite, models.Note.id == models.Favorite.note_id).filter(
@@ -332,7 +323,7 @@ def get_user_favorite_notes(db: Session,
     for note in res:
         note.is_favorited = True  # 用户的收藏列表，全部标记为已收藏
 
-    return res
+    return {"total": total, "notes": res}
 
 
 # 判断某笔记是否被用户收藏
@@ -348,6 +339,9 @@ def list_notes_with_favorites(db: Session,
                               user_id: int,
                               skip: int = 0,
                               limit: int = 20):
+    # 查询总记录数
+    total = (db.query(
+        models.Note).filter(models.Note.user_id == user_id).count())
     # 子查询：判断当前用户是否收藏了笔记
     favorite_subquery = (db.query(models.Favorite.note_id).filter(
         models.Favorite.user_id == user_id).subquery())
@@ -361,6 +355,7 @@ def list_notes_with_favorites(db: Session,
                     "is_favorited")  # 附加布尔字段
         ).filter(models.Note.user_id == user_id).options(
             joinedload(models.Note.tags))  # 预加载 tags
+        .order_by(models.Note.updated_at.desc())  # 按修改时间降序
         .offset(skip).limit(limit).all())
 
     # 将查询结果中的 is_favorited 字段附加到 Note 对象
@@ -369,4 +364,4 @@ def list_notes_with_favorites(db: Session,
         note.is_favorited = is_favorited
         res.append(note)
 
-    return res
+    return {"total": total, "notes": res}

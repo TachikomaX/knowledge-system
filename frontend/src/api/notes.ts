@@ -10,7 +10,7 @@ export const createNote = (data: { title: string; content: string; tags?: string
 };
 
 // 获取笔记列表（分页、标签筛选）
-export const getNotes = (params?: { page?: number; size?: number; tag_id_list?: number[] }) => {
+export const getNotes = (params?: { skip?: number; limit?: number; tag_id_list?: number[] }) => {
     return api.get("/notes", { params });
 };
 
@@ -39,11 +39,6 @@ export const searchNotes = (query: string) => {
     return api.get("/notes/search", { params: { q: query } });
 };
 
-// 语义搜索（向量搜索并生成答案）
-export const semanticSearch = (data: { query: string }) => {
-    return api.post("/semantic-search", data);
-};
-
 // 添加收藏
 export const toggleFavoriteNote = (id: number) => {
     return api.post(`/favorites/${id}`);
@@ -60,6 +55,6 @@ export const checkNotesFavorited = (id: number) => {
 };
 
 // 获取收藏笔记列表
-export const getFavoriteNotes = () => {
-    return api.get("/favorites");
-};
+export const getFavoriteNotes = (params?: { skip?: number; limit?: number }) => {
+    return api.get("/favorites", { params });
+}; 

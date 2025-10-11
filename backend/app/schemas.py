@@ -23,6 +23,10 @@ class ResponseBase(GenericModel, Generic[T]):
         orm_mode = True
 
 
+class ResponseWithTotal(ResponseBase[T]):
+    total: Optional[int] = None
+
+
 # 标准 OAuth2 响应模型
 class OAuth2Response(BaseModel):
     access_token: str
