@@ -107,8 +107,8 @@ def get_note(
 @router.get("", response_model=ResponseWithTotal[List[NoteOut]])
 def list_notes(
         tag_id_list: List[int] = Query([], description="标签 ID 列表"),  # 标签名称
-        skip: int = 0,
-        limit: int = 20,
+        skip: int = Query(0, ge=0, description="跳过的条数"),
+        limit: int = Query(20, ge=1, le=100, description="返回条数限制"),
         db: Session = Depends(get_db),
         current_user: user_model.User = Depends(get_current_user),
 ):

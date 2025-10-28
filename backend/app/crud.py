@@ -308,9 +308,10 @@ def get_user_favorite_notes(db: Session,
                             user_id: int,
                             skip: int = 0,
                             limit: int = 20):
-    # 查询总记录数
-    total = (db.query(
-        models.Note).filter(models.Note.user_id == user_id).count())
+    # 查询收藏总记录数
+    total = (db.query(models.Note).join(
+        models.Favorite, models.Note.id == models.Favorite.note_id).filter(
+            models.Favorite.user_id == user_id).count())
     # 查询当前用户收藏的所有笔记，并支持分页
     res = (
         db.query(models.Note).join(
