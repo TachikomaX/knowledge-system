@@ -24,6 +24,8 @@ import TagModal from "../components/TagModal";
 import NoteCard from "../components/NoteCard";
 import Sidebar from "../components/Sidebar";
 import TagCard from "../components/TagCard";
+import Pagination from "../components/Pagination";
+
 
 interface Tag {
   id: number;
@@ -74,36 +76,57 @@ export default function Notes({ onLogout }: NotesProps) {
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const [tagsLoaded, setTagsLoaded] = useState(false);
+  // 分页
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [pageSize] = useState<number>(9); // 每页显示9个笔记（3x3网格）
 
   const fetchNotesByTags = useCallback(async (tagIds: number[] = []) => {
     setLoading(true);
     try {
-      const res = await getNotes({ tag_id_list: tagIds });
+      const res = await getNotes({ tag_id_list: tagIds, skip: (currentPage - 1) * pageSize, limit: pageSize });
       setNotes(res.data.data || []);
     } catch (err) {
       console.error("获取笔记失败:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [pageSize, currentPage]);
 
   // 获取笔记列表
   const fetchNotes = useCallback(async () => {
-    await fetchNotesByTags(selectedTagIds);
-  }, [selectedTagIds, fetchNotesByTags]);
+    setLoading(true);
+    try {
+      const res = await getNotes({
+        tag_id_list: selectedTagIds,
+        skip: (currentPage - 1) * pageSize,
+        limit: pageSize,
+      });
+      setNotes(res.data.data || []);
+      setTotalPages(Math.ceil((res.data.total || 0) / pageSize)); // 计算总页数
+    } catch (err) {
+      console.error("获取笔记失败:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedTagIds, currentPage, pageSize]);
 
   // 获取收藏笔记列表
   const fetchFavoriteNotes = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await getFavoriteNotes();
+      const res = await getFavoriteNotes({
+        skip: (currentPage - 1) * pageSize,
+        limit: pageSize,
+      });
       setNotes(res.data.data || []);
+      setTotalPages(Math.ceil((res.data.total || 0) / pageSize)); // 计算总页数
     } catch (err) {
       console.error("获取收藏笔记失败:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentPage, pageSize]);
 
   // 获取标签列表
   const fetchTags = useCallback(async () => {
@@ -283,17 +306,21 @@ export default function Notes({ onLogout }: NotesProps) {
   }, []);
 
   useEffect(() => {
-    if (activeView === 'notes') {
+    if (activeView === "notes") {
       fetchNotes();
-    } else if (activeView === 'tags') {
-      fetchTags();
-    } else if (activeView === 'favorites') {
+    } else if (activeView === "favorites") {
       fetchFavoriteNotes();
     }
-  }, [activeView, fetchNotes, fetchTags, fetchFavoriteNotes]);
+  }, [activeView, fetchNotes, fetchFavoriteNotes]);
+
+  useEffect(() => {
+    if (activeView === "notes" || activeView === "favorites") {
+      setCurrentPage(1); // 切换 Tab 时重置分页参数
+    }
+  }, [activeView]);
 
   return (
-    <div className="flex min-h-screen w-screen relative overflow-hidden">
+    <div className="flex min-h-screen w-screen relative">
       {/* 背景图片 */}
       <img
         src="/background-1.JPG"
@@ -408,24 +435,36 @@ export default function Notes({ onLogout }: NotesProps) {
               </form>
 
               {/* 内容 */}
-              {loading ? (
-                <div className="text-center text-gray-500">加载中...</div>
-              ) : notes.length === 0 ? (
-                <div className="text-center text-gray-500">暂无笔记</div>
-              ) : (
-                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                  {notes.map((note) => (
-                    <NoteCard
-                      key={note.id}
-                      note={note}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                      onView={handleView}
-                      onToggleFavorite={handleToggleFavorite}
-                    />
-                  ))}
+              <div className="flex flex-col min-h-[calc(100vh-300px)]  justify-between">
+                {loading ? (
+                  <div className="text-center text-gray-500 flex-grow">加载中...</div>
+                ) : notes.length === 0 ? (
+                  <div className="text-center text-gray-500 flex-grow">暂无笔记</div>
+                ) : (
+                  <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    {notes.map((note) => (
+                      <NoteCard
+                        key={note.id}
+                        note={note}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        onView={handleView}
+                        onToggleFavorite={handleToggleFavorite}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* 分页组件（底部固定距离） */}
+                <div className="mt-6 mb-6 flex justify-center">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(page) => setCurrentPage(page)}
+                    loading={loading}
+                  />
                 </div>
-              )}
+              </div>
             </>
           ) : activeView === 'favorites' ? (
             // 收藏页面
@@ -454,25 +493,39 @@ export default function Notes({ onLogout }: NotesProps) {
                 </button>
               </form>
 
-              {/* 收藏笔记内容 */}
-              {loading ? (
-                <div className="text-center text-gray-500">加载中...</div>
-              ) : notes.length === 0 ? (
-                <div className="text-center text-gray-500">暂无收藏笔记</div>
-              ) : (
-                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                  {notes.map((note) => (
-                    <NoteCard
-                      key={note.id}
-                      note={note}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                      onView={handleView}
-                      onToggleFavorite={handleToggleFavorite}
-                    />
-                  ))}
-                </div>
-              )}
+                <div className="flex flex-col min-h-[calc(100vh-300px)]  justify-between">
+                {/* 收藏笔记内容 */}
+                {loading ? (
+                  <div className="text-center text-gray-500">加载中...</div>
+                ) : notes.length === 0 ? (
+                  <div className="text-center text-gray-500">暂无收藏笔记</div>
+                ) : (
+                  <>
+                    <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                      {notes.map((note) => (
+                        <NoteCard
+                          key={note.id}
+                          note={note}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                          onView={handleView}
+                          onToggleFavorite={handleToggleFavorite}
+                        />
+                      ))}
+                    </div>
+
+                    {/* 分页组件（底部固定距离） */}
+                    <div className="mt-6 mb-6 flex justify-center">
+                      <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={(page) => setCurrentPage(page)}
+                        loading={loading}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           ) : (
             // 标签管理视图
