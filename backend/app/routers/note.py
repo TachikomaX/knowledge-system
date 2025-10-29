@@ -16,9 +16,10 @@ from app.auth import get_current_user
 from app.db import get_db
 from app.models import user as user_model
 from app.schemas import (NoteCreate, NoteOut, NoteUpdate, ResponseBase,
-                         ResponseWithTotal)
+                         ResponseWithTotal, SummaryRequest)
 from app.utils.response import (error_response, success_response,
                                 success_response_for_notes)
+from app.utils.summary_agent import generate_summary
 
 router = APIRouter(prefix="/api/notes", tags=["notes"])
 
@@ -88,6 +89,27 @@ def search_notes(
     except SQLAlchemyError:
         db.rollback()
         return error_response(code=2003, msg="Failed to search notes")
+
+
+@router.post("/generate_summary", response_model=ResponseBase[str])
+def regenerate_summary(summary_request: SummaryRequest):
+    """生成笔记摘要
+    
+    可用于新建笔记时生成摘要，或为已有笔记重新生成摘要。
+    不依赖数据库中已有的笔记，只需要提供标题和内容即可。
+    
+    Args:
+        summary_request: 包含笔记标题和内容的请求体
+    
+    Returns:
+        生成的摘要文本
+    """
+    # 调用 AI 摘要生成器
+    summary = generate_summary(summary_request.title, summary_request.content)
+    if not summary:
+        return error_response(code=5001, msg="AI摘要生成失败，请稍后再试")
+
+    return success_response(data=summary, msg="AI摘要生成成功")
 
 
 @router.get("/{note_id}", response_model=ResponseBase[NoteOut])

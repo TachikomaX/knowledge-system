@@ -106,3 +106,12 @@ class NoteOut(NoteBase):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+
+class SummaryRequest(BaseModel):
+    title: str
+    content: str
+
+
+class SummaryResponse(BaseModel):
+    summary: str
