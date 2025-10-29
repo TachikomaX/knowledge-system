@@ -76,6 +76,22 @@ jupyter = ["ipython (>=7.8.0)", "tokenize-rt (>=3.2.0)"]
 uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
+name = "certifi"
+version = "2025.10.5"
+description = "Python package for providing Mozilla's CA Bundle."
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[[package]]
+name = "charset-normalizer"
+version = "3.4.4"
+description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[[package]]
 name = "click"
 version = "8.1.8"
 description = "Composable command line interface toolkit"
@@ -480,6 +496,24 @@ optional = false
 python-versions = ">=3.8"
 
 [[package]]
+name = "requests"
+version = "2.32.5"
+description = "Python HTTP for Humans."
+category = "main"
+optional = false
+python-versions = ">=3.9"
+
+[package.dependencies]
+certifi = ">=2017.4.17"
+charset_normalizer = ">=2,<4"
+idna = ">=2.5,<4"
+urllib3 = ">=1.21.1,<3"
+
+[package.extras]
+socks = ["PySocks (>=1.5.6,!=1.5.7)"]
+use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
+
+[[package]]
 name = "rsa"
 version = "4.9.1"
 description = "Pure-Python RSA implementation"
@@ -586,6 +620,20 @@ python-versions = ">=3.9"
 typing-extensions = ">=4.12.0"
 
 [[package]]
+name = "urllib3"
+version = "2.5.0"
+description = "HTTP library with thread-safe connection pooling, file post, and more."
+category = "main"
+optional = false
+python-versions = ">=3.9"
+
+[package.extras]
+brotli = ["brotli (>=1.0.9)", "brotlicffi (>=0.8.0)"]
+h2 = ["h2 (>=4,<5)"]
+socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
+zstd = ["zstandard (>=0.18.0)"]
+
+[[package]]
 name = "uvicorn"
 version = "0.35.0"
 description = "The lightning-fast ASGI server."
@@ -604,7 +652,7 @@ standard = ["colorama (>=0.4)", "httptools (>=0.6.3)", "python-dotenv (>=0.13)",
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "f81da61ebf6c3fc537a2400134edf3698185b823a204c76c1b7a131c4136b6f4"
+content-hash = "b6992c9240d1f948352cf20012d440138707df5584751a96db90d8b47282623b"
 
 [metadata.files]
 alembic = []
@@ -612,6 +660,8 @@ annotated-types = []
 anyio = []
 bcrypt = []
 black = []
+certifi = []
+charset-normalizer = []
 click = []
 colorama = []
 dnspython = []
@@ -646,6 +696,7 @@ pytest = []
 python-dotenv = []
 python-jose = []
 python-multipart = []
+requests = []
 rsa = []
 six = []
 sniffio = []
@@ -654,4 +705,5 @@ starlette = []
 tomli = []
 typing-extensions = []
 typing-inspection = []
+urllib3 = []
 uvicorn = []

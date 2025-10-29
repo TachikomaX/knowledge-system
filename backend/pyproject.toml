@@ -20,6 +20,7 @@ python-multipart = "^0.0.20"
 passlib = "^1.7.4"
 bcrypt = "^4.3.0"
 email-validator = "^2.3.0"
+requests = "^2.32.5"
 
 [tool.poetry.dev-dependencies]
 alembic = "^1.16.4"

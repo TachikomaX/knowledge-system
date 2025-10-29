@@ -1,6 +1,6 @@
 from typing import Optional
 
-from app.schemas import ResponseBase, T, ResponseWithTotal
+from app.schemas import ResponseBase, ResponseWithTotal, T
 
 
 def success_response(data: Optional[T] = None,

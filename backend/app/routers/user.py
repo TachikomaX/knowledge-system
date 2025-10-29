@@ -4,8 +4,6 @@
 # @File        : user.py
 # @Description :
 
-from datetime import timedelta
-
 from fastapi import APIRouter, Depends
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -62,9 +60,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
                                           db_user.hashed_password):
         return error_response(code=1003, msg="Incorrect email or password")
 
-    access_token_expires = timedelta(minutes=30)  # todo 待配置化
-    access_token = create_access_token(data={"sub": str(db_user.id)},
-                                       expires_delta=access_token_expires)
+    access_token = create_access_token(data={"sub": str(db_user.id)})
 
     return success_response(data={
         "access_token": access_token,

@@ -15,8 +15,10 @@ from app import crud
 from app.auth import get_current_user
 from app.db import get_db
 from app.models import user as user_model
-from app.schemas import NoteCreate, NoteOut, NoteUpdate, ResponseBase, ResponseWithTotal
-from app.utils.response import error_response, success_response, success_response_for_notes
+from app.schemas import (NoteCreate, NoteOut, NoteUpdate, ResponseBase,
+                         ResponseWithTotal)
+from app.utils.response import (error_response, success_response,
+                                success_response_for_notes)
 
 router = APIRouter(prefix="/api/notes", tags=["notes"])
 

@@ -3,11 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.routers.favorite import router as favorite_router
 from app.routers.note import router as notes_router
 from app.routers.tag import router as tags_router
 from app.routers.token import router as token_router
 from app.routers.user import router as users_router
-from app.routers.favorite import router as favorite_router
 from app.utils.response import error_response
 
 app = FastAPI()
