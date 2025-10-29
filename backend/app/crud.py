@@ -6,7 +6,7 @@
 
 from typing import List
 
-from sqlalchemy import exists, func
+from sqlalchemy import exists
 # here put the import lib
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
@@ -123,7 +123,7 @@ def get_note(db: Session, note_id: int, user_id: int):
     return note
 
 
-# 简单全文搜索
+# 简单全文搜索 todo 接入ElasticSearch？
 def search_notes(db: Session,
                  user_id: int,
                  query: str,
@@ -140,13 +140,11 @@ def search_notes(db: Session,
             exists().where(
                 models.Note.id == favorite_subquery.c.note_id).label(
                     "is_favorited")  # 附加布尔字段
-        ).filter(
-            models.Note.user_id == user_id,
-            func.to_tsvector(
-                'english', models.Note.title + ' ' + models.Note.content +
-                ' ' + func.coalesce(models.Note.summary, '')).op('@@')(
-                    func.plainto_tsquery(
-                        'english', query))).offset(skip).limit(limit).all())
+        ).filter(models.Note.user_id == user_id,
+                 (models.Note.title.ilike(f"%{query}%")
+                  | models.Note.content.ilike(f"%{query}%")
+                  | models.Note.summary.ilike(f"%{query}%")
+                  )).offset(skip).limit(limit).all())
 
     # 将查询结果中的 is_favorited 字段附加到 Note 对象
     res = []
