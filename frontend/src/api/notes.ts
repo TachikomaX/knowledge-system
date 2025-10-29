@@ -57,4 +57,9 @@ export const checkNotesFavorited = (id: number) => {
 // 获取收藏笔记列表
 export const getFavoriteNotes = (params?: { skip?: number; limit?: number }) => {
     return api.get("/favorites", { params });
-}; 
+};
+
+// 生成 AI 摘要
+export const generateSummary = (data: { title: string; content: string }) => {
+    return api.post("/notes/generate_summary", data);
+};

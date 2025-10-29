@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Tag as TagIcon } from 'lucide-react';
+import { X, Tag as TagIcon, Wand2 } from 'lucide-react';
 import { getTags, createTag } from '../api/tags';
+import { generateSummary } from '../api/notes';
+
 
 interface Tag {
   id: number;
@@ -37,6 +39,7 @@ export default function NoteModal({
   const [newTag, setNewTag] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAddingTag, setIsAddingTag] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
 
   // 同步 note 数据（用于编辑）
@@ -131,9 +134,23 @@ export default function NoteModal({
     }
   };
 
+  const handleGenerateSummary = async () => {
+    if (!title.trim() || !content.trim()) return;
+
+    try {
+      setIsGeneratingSummary(true);
+      const res = await generateSummary({ title, content });
+      setSummary(res.data.data);
+    } catch (err) {
+      console.error('生成摘要失败:', err);
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || !content.trim()) return;
 
     onSave({
       title,
@@ -169,6 +186,7 @@ export default function NoteModal({
           <div className="mb-4">
             <label htmlFor="note-title" className="block text-sm font-medium text-gray-700 mb-1">
               标题
+              <span className="text-red-500 ml-1">*</span>
             </label>
             <input
               id="note-title"
@@ -176,7 +194,7 @@ export default function NoteModal({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${!title.trim() ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
               placeholder="输入笔记标题"
               disabled={!!note && !isEditing}
             />
@@ -185,94 +203,94 @@ export default function NoteModal({
 
           {/* Tags */}
           {isEditing && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">标签</label>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">标签</label>
 
-            {isLoading ? (
-              <div className="text-gray-500 text-sm">加载中...</div>
-            ) : (
-              <div className="border border-gray-300 rounded-lg p-3">
-                {/* 已选标签显示 */}
-                <div className="mb-3">
-                  {selectedTagIds.length > 0 ? (
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {availableTags
-                        .filter(tag => selectedTagIds.includes(tag.id))
-                        .map(tag => (
-                          <span
+              {isLoading ? (
+                <div className="text-gray-500 text-sm">加载中...</div>
+              ) : (
+                <div className="border border-gray-300 rounded-lg p-3">
+                  {/* 已选标签显示 */}
+                  <div className="mb-3">
+                    {selectedTagIds.length > 0 ? (
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {availableTags
+                          .filter(tag => selectedTagIds.includes(tag.id))
+                          .map(tag => (
+                            <span
+                              key={tag.id}
+                              className={`px-2 py-0.5 text-xs rounded-full flex items-center gap-1 ${isEditing
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-gray-100 text-gray-700'
+                                }`}
+                            >
+                              <TagIcon size={10} />
+                              {tag.name}
+                              {isEditing && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleTagToggle(tag.id)}
+                                  className="ml-1 text-blue-600 hover:text-blue-800"
+                                >
+                                  ×
+                                </button>
+                              )}
+                            </span>
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm mb-2">当前笔记未设置标签</p>
+                    )}
+                  </div>
+
+                  {/* 可选标签列表 */}
+                  {isEditing && (
+                    <div className="mb-3">
+                      <div className="flex flex-wrap gap-2">
+                        {availableTags.map(tag => (
+                          <button
                             key={tag.id}
-                            className={`px-3 py-1 text-xs rounded-full flex items-center gap-1 ${isEditing
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-gray-100 text-gray-700'
-                              }`}
+                            type="button"
+                            onClick={() => handleTagToggle(tag.id)}
+                            disabled={selectedTagIds.includes(tag.id)}
+                            className={`px-2 py-0.5 text-xs rounded-full flex items-center gap-1 ${selectedTagIds.includes(tag.id)
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              } ${selectedTagIds.includes(tag.id) ? '' : 'cursor-pointer'}`}
                           >
                             <TagIcon size={12} />
                             {tag.name}
-                            {isEditing && (
-                              <button
-                                type="button"
-                                onClick={() => handleTagToggle(tag.id)}
-                                className="ml-1 text-blue-600 hover:text-blue-800"
-                              >
-                                ×
-                              </button>
-                            )}
-                          </span>
+                          </button>
                         ))}
+                      </div>
                     </div>
-                  ) : (
-                    <p className="text-gray-500 text-sm mb-2">当前笔记未设置标签</p>
+                  )}
+
+                  {/* 添加新标签 */}
+                  {isEditing && (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newTag}
+                        onChange={(e) => setNewTag(e.target.value)}
+                        placeholder="添加新标签"
+                        className="flex-1 px-2 py-0.5 border rounded text-xs"
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddNewTag())}
+                        disabled={isAddingTag}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddNewTag}
+                        className="px-2 py-0.5 bg-gray-200 rounded text-xs hover:bg-gray-300 disabled:opacity-50"
+                        disabled={isAddingTag}
+                      >
+                        {isAddingTag ? '...' : '+'}
+                      </button>
+                    </div>
                   )}
                 </div>
-
-                {/* 可选标签列表 */}
-                {isEditing && (
-                  <div className="mb-3">
-                    <div className="flex flex-wrap gap-2">
-                      {availableTags.map(tag => (
-                        <button
-                          key={tag.id}
-                          type="button"
-                          onClick={() => handleTagToggle(tag.id)}
-                          disabled={selectedTagIds.includes(tag.id)}
-                          className={`px-3 py-1 text-xs rounded-full flex items-center gap-1 ${selectedTagIds.includes(tag.id)
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            } ${selectedTagIds.includes(tag.id) ? '' : 'cursor-pointer'}`}
-                        >
-                          <TagIcon size={12} />
-                          {tag.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 添加新标签 */}
-                {isEditing && (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      placeholder="添加新标签"
-                      className="flex-1 px-3 py-1 border rounded text-sm"
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddNewTag())}
-                      disabled={isAddingTag}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddNewTag}
-                      className="px-3 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300 disabled:opacity-50"
-                      disabled={isAddingTag}
-                    >
-                      {isAddingTag ? '...' : '+'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>)}
+              )}
+            </div>)}
 
           {/* 显示笔记原有标签（查看模式下） */}
           {note && !isEditing && (
@@ -282,7 +300,7 @@ export default function NoteModal({
                 {note.tags?.map((tag) => (
                   <span
                     key={tag.id}
-                    className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full flex items-center gap-1"
+                    className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full flex items-center gap-1"
                   >
                     <TagIcon size={12} />
                     {tag.name}
@@ -292,18 +310,31 @@ export default function NoteModal({
             </div>
           )}
 
-          {/* Content */}
+          {/* Summary */}
           <div className="mb-4">
-            <label htmlFor="note-content" className="block text-sm font-medium text-gray-700 mb-1">
-              摘要
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label htmlFor="note-summary" className="block text-sm font-medium text-gray-700">
+                摘要
+              </label>
+              {(!note || isEditing) && (
+                <button
+                  type="button"
+                  onClick={handleGenerateSummary}
+                  disabled={!title.trim() || !content.trim() || isGeneratingSummary}
+                  className="inline-flex items-center px-2 py-0.5 text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+                >
+                  <Wand2 size={14} className="mr-1" />
+                  {isGeneratingSummary ? '生成中...' : 'AI生成摘要'}
+                </button>
+              )}
+            </div>
             <textarea
-              id="note-content"
+              id="note-summary"
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              placeholder="写下你的想法..."
+              placeholder="笔记摘要..."
               disabled={!!note && !isEditing}
             />
           </div>
@@ -312,16 +343,20 @@ export default function NoteModal({
           <div className="mb-4">
             <label htmlFor="note-content" className="block text-sm font-medium text-gray-700 mb-1">
               内容
+              <span className="text-red-500 ml-1">*</span>
             </label>
             <textarea
               id="note-content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${!content.trim() ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
               placeholder="写下你的想法..."
               disabled={!!note && !isEditing}
             />
+            {!content.trim() && (
+              <p className="mt-1 text-sm text-red-500">内容不能为空</p>
+            )}
           </div>
         </form>
 
@@ -330,7 +365,7 @@ export default function NoteModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            className="px-3 py-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
           >
             取消
           </button>
@@ -338,8 +373,8 @@ export default function NoteModal({
             <button
               type="submit"
               onClick={handleSubmit}
-              disabled={!title.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!title.trim() || !content.trim()}
+              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isEditing ? '保存' : '创建'}
             </button>

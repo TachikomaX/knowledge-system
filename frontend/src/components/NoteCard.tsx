@@ -107,7 +107,7 @@ export default function NoteCard({ note, onEdit, onDelete, onView, onToggleFavor
                     </button>
                 </div>
             </div>
-            <p className="text-gray-600 mt-2 line-clamp-2">
+            <p className="text-gray-600 text-sm mt-2 line-clamp-2">
                 {note.summary}
             </p>
             {/* 标签和更新时间在同一行 */}
