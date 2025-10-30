@@ -16,9 +16,8 @@ from app.auth import get_current_user
 from app.db import get_db
 from app.models import user as user_model
 from app.schemas import (NoteCreate, NoteOut, NoteUpdate, ResponseBase,
-                         ResponseWithTotal, SummaryRequest)
-from app.schemas import (error_response, success_response,
-                         success_response_for_notes)
+                         ResponseWithTotal, SummaryRequest, error_response,
+                         success_response, success_response_for_notes)
 from app.utils.summary_agent import generate_summary
 
 router = APIRouter(prefix="/api/notes", tags=["notes"])

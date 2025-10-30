@@ -1,7 +1,8 @@
 # Note 相关 schema
 from datetime import datetime
-from pydantic import BaseModel
-from typing import Optional, List
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict
 
 from app.schemas.tag import TagOut
 
@@ -10,6 +11,7 @@ class NoteBase(BaseModel):
     title: str
     content: str
     summary: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NoteCreate(NoteBase):
@@ -30,7 +32,4 @@ class NoteOut(NoteBase):
     updated_at: datetime
     tags: List[TagOut] = []
     is_favorited: bool
-
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

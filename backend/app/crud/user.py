@@ -1,8 +1,9 @@
 # 用户相关数据库操作
 from sqlalchemy.orm import Session
+
+from app.auth import hash_password
 from app.models import user as user_model
 from app.schemas.user import UserCreate
-from app.auth import hash_password
 
 
 def get_user_by_email(db: Session, email: str):

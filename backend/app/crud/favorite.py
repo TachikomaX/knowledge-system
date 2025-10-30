@@ -1,7 +1,8 @@
 # Favorite 相关数据库操作
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql import exists
-from sqlalchemy.exc import SQLAlchemyError
+
 from app import models
 
 

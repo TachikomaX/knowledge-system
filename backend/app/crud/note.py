@@ -1,13 +1,14 @@
 # Note 相关数据库操作
 from typing import List
+
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql import exists
-from sqlalchemy.exc import SQLAlchemyError
-from app import models
-from app.schemas import NoteCreate, NoteUpdate
 
+from app import models
 # 如果 is_note_favorited 是本模块外部函数，需要导入
 from app.crud.favorite import is_note_favorited
+from app.schemas import NoteCreate, NoteUpdate
 
 
 def create_note(db: Session, user_id: int, note: NoteCreate):

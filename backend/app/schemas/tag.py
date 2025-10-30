@@ -1,9 +1,10 @@
 # Tag 相关 schema
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class TagBase(BaseModel):
     name: str
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TagCreate(TagBase):
@@ -16,6 +17,4 @@ class TagUpdate(BaseModel):
 
 class TagOut(TagBase):
     id: int
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

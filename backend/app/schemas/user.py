@@ -1,21 +1,20 @@
 # 用户相关 schema
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class UserBase(BaseModel):
     email: EmailStr
     username: str
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserCreate(UserBase):
     password: str
 
 
-class UserOut(UserBase):
+class UserOut(BaseModel):
     id: int
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserLogin(BaseModel):

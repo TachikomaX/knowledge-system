@@ -1,8 +1,7 @@
-from typing import Generic, TypeVar, Optional
+from typing import Generic, Optional, TypeVar
+
+from pydantic import BaseModel, ConfigDict
 from pydantic.generics import GenericModel
-from pydantic import BaseModel
-
-
 
 T = TypeVar("T")
 
@@ -11,9 +10,7 @@ class ResponseBase(GenericModel, Generic[T]):
     code: int
     msg: str
     data: Optional[T] = None
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ResponseWithTotal(ResponseBase[T]):
@@ -39,4 +36,4 @@ def success_response_for_notes(data: Optional[T] = None,
 
 
 def error_response(code: int = 1, msg: str = "Error") -> dict:
-    return ResponseBase(code=code, msg=msg, data=None).dict()
+    return ResponseBase(code=code, msg=msg, data=None).model_dump()
