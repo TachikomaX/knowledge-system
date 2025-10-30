@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app import crud, models
-from app.auth import get_current_user  # 和你现有保持一致
+from app.auth import get_current_user
 from app.db import get_db
 from app.schemas import NoteOut, ResponseBase, ResponseWithTotal
-from app.utils.response import (error_response, success_response,
-                                success_response_for_notes)
+from app.schemas import (error_response, success_response,
+                                  success_response_for_notes)
 
 router = APIRouter(
     prefix="/api/favorites",

@@ -14,7 +14,7 @@ from app.db import get_db
 from app.models import user as user_model
 from app.schemas import (OAuth2Response, ResponseBase, UserCreate, UserLogin,
                          UserOut)
-from app.utils.response import error_response, success_response
+from app.schemas import error_response, success_response
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
