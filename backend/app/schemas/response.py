@@ -1,12 +1,10 @@
-from typing import Generic, Optional, TypeVar
-
+from typing import Generic, TypeVar, Optional
 from pydantic import BaseModel, ConfigDict
-from pydantic.generics import GenericModel
 
 T = TypeVar("T")
 
 
-class ResponseBase(GenericModel, Generic[T]):
+class ResponseBase(BaseModel, Generic[T]):
     code: int
     msg: str
     data: Optional[T] = None

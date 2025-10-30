@@ -39,6 +39,7 @@ interface Note {
   summary: string;
   tags: Tag[];
   created_at: string;
+  updated_at: string; // 更新时间
   is_favorited?: boolean; // 收藏状态
 }
 
@@ -310,8 +311,10 @@ export default function Notes({ onLogout }: NotesProps) {
       fetchNotes();
     } else if (activeView === "favorites") {
       fetchFavoriteNotes();
+    } else if (activeView === "tags") {
+      fetchTags();
     }
-  }, [activeView, fetchNotes, fetchFavoriteNotes]);
+  }, [activeView, fetchNotes, fetchFavoriteNotes, fetchTags]);
 
   useEffect(() => {
     if (activeView === "notes" || activeView === "favorites") {
@@ -493,7 +496,7 @@ export default function Notes({ onLogout }: NotesProps) {
                 </button>
               </form>
 
-                <div className="flex flex-col min-h-[calc(100vh-300px)]  justify-between">
+              <div className="flex flex-col min-h-[calc(100vh-300px)]  justify-between">
                 {/* 收藏笔记内容 */}
                 {loading ? (
                   <div className="text-center text-gray-500">加载中...</div>
