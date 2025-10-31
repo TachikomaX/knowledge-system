@@ -1,5 +1,7 @@
 # Knowledge Management System
 
+[🇬🇧 English README](./README.en-US.md) | [🇯🇵 日本語README](./README.ja-JP.md)
+
 一个基于 **FastAPI + PostgreSQL + React** 的知识管理系统，支持笔记记录、标签管理、AI 自动摘要 & 语义搜索（集成 DeepSeek API）。
 
 ![登录界面预览](./frontend/public/login-preview.png)
