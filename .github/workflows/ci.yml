@@ -36,6 +36,8 @@ jobs:
 
     env:
       DATABASE_URL: postgresql+psycopg2://kms_user:kms_pass@localhost:5432/kms_test
+      SECRET_KEY: test_secret_key_for_ci_only
+      DEEPSEEK_API_KEY: dummy_key_for_ci
 
     defaults:
       run:
