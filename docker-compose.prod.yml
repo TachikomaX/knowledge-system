@@ -1,6 +1,6 @@
 services:
   kms_app:
-    image: ghcr.io/Alvinsmask/knowledge-system:latest
+    image: ghcr.io/tachikomax/knowledge-system:latest
     container_name: kms_app
     restart: always
     env_file:
