@@ -29,8 +29,8 @@ jobs:
 
       - name: Deploy on EC2 (pull image & restart)
         env:
-          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }} # PAT with read:packages
+          GHCR_USERNAME: ${{ vars.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ vars.GHCR_TOKEN }} # PAT with read:packages
         run: |
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
           set -e
