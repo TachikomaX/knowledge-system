@@ -1,13 +1,6 @@
 name: Docker Image
 
 on:
-  push:
-    branches: [ "master", "main" ]
-    paths:
-      - "Dockerfile"
-      - "frontend/**"
-      - "backend/**"
-      - "nginx.conf"
   workflow_dispatch:
 
 permissions:

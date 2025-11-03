@@ -1,15 +1,6 @@
 name: Deploy to EC2
 
 on:
-  push:
-    branches: [ "master", "main" ]
-    paths:
-      - ".github/workflows/deploy-ec2.yml"
-      - "docker-compose.prod.yml"
-      - "Dockerfile"
-      - "frontend/**"
-      - "backend/**"
-      - "nginx.conf"
   workflow_dispatch:
 
 jobs:
