@@ -27,29 +27,44 @@ jobs:
         run: |
           scp docker-compose.prod.yml ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/kms/docker-compose.prod.yml
 
+      - name: Validate deploy variables
+        env:
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          GHCR_USERNAME: ${{ vars.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ vars.GHCR_TOKEN }}
+        run: |
+          test -n "$EC2_USER" || { echo "EC2_USER is empty"; exit 1; }
+          test -n "$EC2_HOST" || { echo "EC2_HOST is empty"; exit 1; }
+          test -n "$GHCR_USERNAME" || { echo "GHCR_USERNAME is empty"; exit 1; }
+          test -n "$GHCR_TOKEN" || { echo "GHCR_TOKEN is empty"; exit 1; }
+
       - name: Deploy on EC2 (pull image & restart)
         env:
+          # 用户名可用普通环境变量或 secrets，令牌必须用 secrets 且具备 read:packages
           GHCR_USERNAME: ${{ vars.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ vars.GHCR_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "bash -s" <<'EOF'
-          set -e
-          export GHCR_USERNAME="${GHCR_USERNAME}"
-          export GHCR_TOKEN="${GHCR_TOKEN}"
-          export REPO_LOWER=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
+          # 将环境变量通过 ssh 前缀传递到远程环境，避免在 'EOF' 中被清空
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "GHCR_USERNAME='${GHCR_USERNAME}' GHCR_TOKEN='${GHCR_TOKEN}' GITHUB_REPOSITORY='${GITHUB_REPOSITORY}' bash -s" <<'EOF'
+          set -euo pipefail
+          REPO_LOWER=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
 
           sudo mkdir -p /opt/kms
           cd /opt/kms
 
-          echo "\$GHCR_TOKEN" | sudo docker login ghcr.io -u "\$GHCR_USERNAME" --password-stdin
-          sudo docker pull ghcr.io/\$REPO_LOWER:latest
+          # 登录 GHCR 并拉取最新镜像
+          echo "${GHCR_TOKEN}" | sudo docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
+          sudo docker pull ghcr.io/${REPO_LOWER}:latest
 
+          # 使用生产 compose 启动（优先 docker compose，兼容 docker-compose）
           if command -v docker >/dev/null && docker compose version >/dev/null 2>&1; then
             sudo docker compose -f docker-compose.prod.yml up -d
           else
             sudo docker-compose -f docker-compose.prod.yml up -d
           fi
 
+          # 清理悬空镜像
           sudo docker image prune -f || true
           EOF
