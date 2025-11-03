@@ -10,7 +10,7 @@ def test_create_note(client, test_user):
     assert resp.status_code == 200
     assert resp.json()["code"] == 0
     note_id = resp.json()["data"]["id"]
-    return note_id
+    assert note_id > 0
 
 
 def test_update_note(client, test_user):
