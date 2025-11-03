@@ -161,3 +161,33 @@ For suggestions or issues, please submit an Issue or join Discussions.
 MIT © 2025 HyperionXX
 
 ---
+
+## Deploy to AWS EC2 (CI/CD)
+
+A simple production path is provided (CI to build/push image, CD to deploy on EC2):
+
+1. Set repository Secrets (Settings → Secrets and variables → Actions):
+   - EC2_HOST: EC2 public IP/domain
+   - EC2_USER: EC2 login user (e.g., ubuntu / ec2-user)
+   - EC2_SSH_KEY: private key (PEM) for the user above
+   - GHCR_USERNAME: your GitHub username
+   - GHCR_TOKEN: GitHub PAT (read:packages) for EC2 to login GHCR
+
+2. Initialize EC2 (install Docker/Compose, prepare /opt/kms and .env):
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/TachikomaX/knowledge-system/master/scripts/ec2-init.sh | bash
+   ```
+
+   - The script creates /opt/kms and a template /opt/kms/.env. Fill values like:
+     - DATABASE_URL=postgresql+psycopg2://\<user\>:\<password\>@\<rds-endpoint\>:5432/\<db\>
+     - DEEPSEEK_API_KEY=your_api_key
+     - VITE_API_URL=/api
+
+3. How deployment is triggered:
+   - Push to master/main triggers image build & push (.github/workflows/docker.yml) and deployment to EC2 (.github/workflows/deploy-ec2.yml)
+   - Or run the Deploy to EC2 workflow manually in Actions
+
+4. Access:
+   - App is served on port 80 (Nginx listens 3000 in container, mapped 80:3000 on host)
+   - For HTTPS, configure certificates on Nginx/ALB

@@ -3,10 +3,12 @@ services:
     build: .
     container_name: kms_app
     restart: always
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=postgresql+psycopg2://kms_user:kms_pass@localhost:5432/kms_db
+      - DATABASE_URL=${DATABASE_URL}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=${VITE_API_URL:-/api}
     ports:
       - "8000:8000"
       - "3000:3000"

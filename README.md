@@ -163,3 +163,33 @@ frontend/
 MIT © 2025 HyperionXX
 
 ---
+
+## 部署到 AWS EC2（CI/CD 联动）
+
+以下为最简部署路径（已在仓库内提供CI与CD工作流与生产Compose）：
+
+1. 在 GitHub 仓库设置 Secrets（仓库 Settings → Secrets and variables → Actions）：
+   - EC2_HOST：EC2 公网 IP/域名
+   - EC2_USER：EC2 登录用户（如 ubuntu / ec2-user）
+   - EC2_SSH_KEY：该用户的私钥（PEM 格式）
+   - GHCR_USERNAME：你的 GitHub 用户名
+   - GHCR_TOKEN：GitHub PAT（需 read:packages），用于 EC2 上登录 GHCR
+
+2. 初始化 EC2（安装 Docker / Compose、准备目录与 .env）：
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/TachikomaX/knowledge-system/master/scripts/ec2-init.sh | bash
+   ```
+
+   - 脚本会创建 /opt/kms 目录并生成 /opt/kms/.env 模板，请填入：
+   - DATABASE_URL=postgresql+psycopg2://\<user\>:\<password\>@\<rds-endpoint\>:5432/\<db\>
+     - DEEPSEEK_API_KEY=your_api_key
+     - VITE_API_URL=/api
+
+3. 部署触发方式：
+   - 推送到 master/main 将触发 Docker 构建并推送镜像（.github/workflows/docker.yml），以及部署到 EC2（.github/workflows/deploy-ec2.yml）
+   - 或在 Actions 手动运行 Deploy to EC2 工作流
+
+4. 访问：
+   - 前端与反代：80 端口（Nginx 容器内监听3000，宿主映射80:3000）
+   - 如需 HTTPS，请在 Nginx/ALB 层配置证书

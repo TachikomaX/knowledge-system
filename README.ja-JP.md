@@ -161,3 +161,33 @@ frontend/
 MIT © 2025 HyperionXX
 
 ---
+
+## AWS EC2 へのデプロイ（CI/CD 連携）
+
+本リポジトリには、プロダクション向けの簡易フロー（CIでイメージ作成、CDでEC2へデプロイ）を用意しています。
+
+1. GitHub リポジトリの Secrets を設定（Settings → Secrets and variables → Actions）
+   - EC2_HOST：EC2 のパブリックIP/ドメイン
+   - EC2_USER：EC2 ログインユーザー（例：ubuntu / ec2-user）
+   - EC2_SSH_KEY：上記ユーザーの秘密鍵（PEM）
+   - GHCR_USERNAME：GitHub ユーザー名
+   - GHCR_TOKEN：GitHub PAT（read:packages）。EC2 側で GHCR ログインに使用
+
+2. EC2 初期化（Docker/Compose の導入、/opt/kms と .env の準備）
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/TachikomaX/knowledge-system/master/scripts/ec2-init.sh | bash
+   ```
+
+   - スクリプトは /opt/kms を作成し、/opt/kms/.env のテンプレートを生成します。以下を記入してください：
+     - DATABASE_URL=postgresql+psycopg2://\<user\>:\<password\>@\<rds-endpoint\>:5432/\<db\>
+     - DEEPSEEK_API_KEY=your_api_key
+     - VITE_API_URL=/api
+
+3. デプロイのトリガー
+   - master/main への push で、イメージのビルド＆プッシュ（.github/workflows/docker.yml）と EC2 へのデプロイ（.github/workflows/deploy-ec2.yml）が実行されます
+   - もしくは Actions から Deploy to EC2 ワークフローを手動実行
+
+4. アクセス
+   - アプリは 80 番ポートで提供（コンテナ内の Nginx は 3000、ホストで 80:3000 マッピング）
+   - HTTPS が必要な場合、Nginx または ALB で証明書を設定してください

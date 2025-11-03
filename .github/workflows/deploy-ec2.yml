@@ -1,0 +1,62 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ "master", "main" ]
+    paths:
+      - ".github/workflows/deploy-ec2.yml"
+      - "docker-compose.prod.yml"
+      - "Dockerfile"
+      - "frontend/**"
+      - "backend/**"
+      - "nginx.conf"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Add EC2 to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Upload docker-compose.prod.yml to EC2
+        run: |
+          scp docker-compose.prod.yml ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/kms/docker-compose.prod.yml
+
+      - name: Deploy on EC2 (pull image & restart)
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }} # PAT with read:packages
+        run: |
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          set -e
+          # 准备目录与 .env（首次请手工放置 .env）
+          sudo mkdir -p /opt/kms
+          cd /opt/kms
+
+          # 登录 GHCR 并拉取最新镜像
+          echo "$GHCR_TOKEN" | sudo docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+          sudo docker pull ghcr.io/${GITHUB_REPOSITORY}:latest
+
+          # 使用生产 compose 启动（优先 docker compose，兼容 docker-compose）
+          if command -v docker >/dev/null && docker compose version >/dev/null 2>&1; then
+            sudo docker compose -f docker-compose.prod.yml up -d
+          else
+            sudo docker-compose -f docker-compose.prod.yml up -d
+          fi
+
+          # 清理悬空镜像
+          sudo docker image prune -f || true
+          EOF
