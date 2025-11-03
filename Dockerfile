@@ -25,6 +25,9 @@ FROM python:3.10-slim
 WORKDIR /app
 # 拷贝后端
 COPY --from=backend-build /backend /app/backend
+# 拷贝已安装的 Python 依赖（site-packages 与可执行脚本，例如 uvicorn）
+COPY --from=backend-build /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=backend-build /usr/local/bin /usr/local/bin
 # 拷贝前端静态资源
 COPY --from=frontend-build /frontend/dist /app/frontend_dist
 # 安装nginx
