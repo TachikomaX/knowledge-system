@@ -1,12 +1,23 @@
 from logging.config import fileConfig
+import os
 
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
+from app.db import Base  # noqa: F401
+from app.models.note import Note  # noqa: F401
+from app.models.note_tags import note_tags  # noqa: F401
+from app.models.tag import Tag  # noqa: F401
+from app.models.user import User  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Prefer DATABASE_URL from environment to override alembic.ini
+env_database_url = os.getenv("DATABASE_URL")
+if env_database_url:
+    config.set_main_option("sqlalchemy.url", env_database_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -17,12 +28,6 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from app.db import Base
-from app.models.note import Note
-from app.models.note_tags import note_tags
-from app.models.tag import Tag
-from app.models.user import User
-
 target_metadata = target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
