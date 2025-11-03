@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "知识管理系统后端"
 authors = ["alvin <alvingcy1121@gmail.com>"]
 license = "MIT"
+packages = [{ include = "app" }]
 
 [tool.poetry.dependencies]
 python = "^3.9"
