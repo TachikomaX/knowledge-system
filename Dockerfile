@@ -11,12 +11,14 @@ RUN npm run build
 FROM python:3.10-slim AS backend-build
 WORKDIR /backend
 COPY backend/pyproject.toml backend/poetry.lock ./
+COPY backend/ ./
 RUN apt-get update && apt-get install -y build-essential curl libffi-dev libssl-dev python3-dev
 RUN pip install --upgrade pip
 RUN pip install poetry
 RUN poetry config virtualenvs.create false
 RUN poetry install --no-interaction --no-ansi
-COPY backend/ ./
+RUN ls -l /backend/app
+RUN cat /backend/pyproject.toml
 
 # 生产镜像
 FROM python:3.10-slim
