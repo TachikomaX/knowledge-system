@@ -12,7 +12,7 @@ interface Tag {
 interface NoteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (note: { title: string; content: string; tags?: number[]; summary: string }) => void;
+  onSave: (note: { title: string; content: string; tags?: number[]; summary: string }) => void | Promise<void>;
   note?: {
     id: number;
     title: string;
@@ -63,6 +63,17 @@ export default function NoteModal({
       titleRef.current.focus();
     }
   }, [isOpen]);
+
+  // 新建模式下，打开弹窗时重置表单，避免上一次内容残留
+  useEffect(() => {
+    if (isOpen && !note) {
+      setTitle('');
+      setContent('');
+      setSummary('');
+      setSelectedTagIds([]);
+      setNewTag('');
+    }
+  }, [isOpen, note]);
 
   // 加载标签数据
   useEffect(() => {
@@ -148,16 +159,41 @@ export default function NoteModal({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
 
-    onSave({
+    const maybePromise = onSave({
       title,
       content,
       tags: selectedTagIds,
       summary
     });
+
+    const afterSuccess = () => {
+      // 新建成功后清空并关闭弹窗
+      if (!note) {
+        setTitle('');
+        setContent('');
+        setSummary('');
+        setSelectedTagIds([]);
+        setNewTag('');
+        onClose();
+      }
+    };
+
+    // 兼容 onSave 返回 Promise 的情况：仅在成功后关闭
+    if (maybePromise && typeof (maybePromise as Promise<void>).then === 'function') {
+      try {
+        await (maybePromise as Promise<void>);
+        afterSuccess();
+      } catch {
+        // 失败则不关闭，由上层处理错误提示
+      }
+    } else {
+      // 同步 onSave：直接关闭
+      afterSuccess();
+    }
   };
 
   return (

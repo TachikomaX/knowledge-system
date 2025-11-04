@@ -82,17 +82,7 @@ export default function Notes({ onLogout }: NotesProps) {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [pageSize] = useState<number>(9); // 每页显示9个笔记（3x3网格）
 
-  const fetchNotesByTags = useCallback(async (tagIds: number[] = []) => {
-    setLoading(true);
-    try {
-      const res = await getNotes({ tag_id_list: tagIds, skip: (currentPage - 1) * pageSize, limit: pageSize });
-      setNotes(res.data.data || []);
-    } catch (err) {
-      console.error("获取笔记失败:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [pageSize, currentPage]);
+  // 通过 useEffect 与 selectedTagIds/currentPage 统一驱动获取笔记
 
   // 获取笔记列表
   const fetchNotes = useCallback(async () => {
@@ -177,8 +167,8 @@ export default function Notes({ onLogout }: NotesProps) {
   const handleTagSelection = (tagId: number, isChecked: boolean) => {
     setSelectedTagIds(prev => {
       const newSelected = isChecked ? (prev.includes(tagId) ? prev : [...prev, tagId]) : prev.filter(id => id !== tagId);
-      // 直接用 newSelected 发起请求（即时生效）
-      fetchNotesByTags(newSelected);
+      // 筛选变更时重置到第 1 页，由 useEffect 驱动请求
+      setCurrentPage(1);
       return newSelected;
     });
   };
@@ -401,7 +391,11 @@ export default function Notes({ onLogout }: NotesProps) {
                     {selectedTagIds.length > 0 && (
                       <button
                         type="button"
-                        onClick={() => { setSelectedTagIds([]); fetchNotes(); }}
+                        onClick={() => {
+                          // 清空筛选并重置分页，由 useEffect 触发刷新
+                          setSelectedTagIds([]);
+                          setCurrentPage(1);
+                        }}
                         className="px-3 py-2 rounded-md text-sm bg-gray-100 hover:bg-gray-200 transition whitespace-nowrap"
                         aria-label="清除标签筛选"
                       >
