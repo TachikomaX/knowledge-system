@@ -105,6 +105,9 @@ DEEPSEEK_API_KEY=
 
 # Frontend API base (Nginx reverse proxy on same host)
 VITE_API_URL=/api
+
+# Whether to expose FastAPI docs in production (default: false)
+EXPOSE_DOCS=false
 ENVEOF
   log "Created /opt/kms/.env (please fill in values)"
 else

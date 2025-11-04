@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -10,7 +11,13 @@ from app.api.token import router as token_router
 from app.api.user import router as users_router
 from app.schemas import error_response
 
-app = FastAPI()
+# 控制是否在生产环境暴露接口文档
+EXPOSE_DOCS = os.getenv("EXPOSE_DOCS", "false").lower() == "true"
+docs_url = "/docs" if EXPOSE_DOCS else None
+redoc_url = None
+openapi_url = "/openapi.json" if EXPOSE_DOCS else None
+
+app = FastAPI(docs_url=docs_url, redoc_url=redoc_url, openapi_url=openapi_url)
 app.include_router(users_router)
 app.include_router(notes_router)
 app.include_router(token_router)

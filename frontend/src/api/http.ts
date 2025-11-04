@@ -3,7 +3,8 @@ import axios, { AxiosError } from "axios";
 import qs from "qs";
 
 const api = axios.create({
-    baseURL: "http://localhost:8000/api",
+    // 使用环境变量（构建时注入）或在生产默认走同域反代 '/api'
+    baseURL: import.meta.env.VITE_API_URL ?? "/api",
     headers: { "Content-Type": "application/json" },
     withCredentials: true,
     paramsSerializer: (params) => {
